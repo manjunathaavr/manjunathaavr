@@ -1,18 +1,28 @@
 /** Minimal Upstash / Vercel KV REST client (no extra dependency). */
 
+function kvRestConfig(): { url: string; token: string } | null {
+  const url =
+    process.env.KV_REST_API_URL ||
+    process.env.UPSTASH_REDIS_REST_URL
+  const token =
+    process.env.KV_REST_API_TOKEN ||
+    process.env.UPSTASH_REDIS_REST_TOKEN
+  if (!url || !token) return null
+  return { url, token }
+}
+
 export function kvConfigured(): boolean {
-  return Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
+  return kvRestConfig() !== null
 }
 
 async function kvCommand<T>(...args: string[]): Promise<T | null> {
-  const url = process.env.KV_REST_API_URL
-  const token = process.env.KV_REST_API_TOKEN
-  if (!url || !token) return null
+  const config = kvRestConfig()
+  if (!config) return null
   try {
-    const res = await fetch(url, {
+    const res = await fetch(config.url, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${config.token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(args),

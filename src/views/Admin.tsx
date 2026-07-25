@@ -256,8 +256,8 @@ export function Admin() {
         {cloudConfigured === false && (
           <p className="hint admin-cloud-hint">
             Cloud sync is not set up yet — admin only shows users from this
-            browser. Add Vercel KV in your Vercel project to see all registered
-            users from every device.
+            browser. In Vercel go to Marketplace → Upstash → Redis, connect it
+            to this project, then redeploy.
           </p>
         )}
         {cloudConfigured === true && (
