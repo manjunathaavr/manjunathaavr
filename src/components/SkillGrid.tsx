@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { memo, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { skills, type Skill } from '../data/skills'
 import { useSession } from '../hooks/useSession'
-import { getMySkillIds } from '../lib/storage'
+import { getMySkillIdsForPhone, subscribeSession } from '../lib/storage'
 import { SkillGlyph } from './SkillGlyph'
 
 type Props = {
@@ -66,15 +66,18 @@ export function SkillGrid({ mode }: Props) {
 
   useEffect(() => {
     const onProfilesChanged = () => setProfileTick((n) => n + 1)
+    const unsubSession = subscribeSession(onProfilesChanged)
     window.addEventListener('sk-profiles-changed', onProfilesChanged)
-    return () =>
+    return () => {
+      unsubSession()
       window.removeEventListener('sk-profiles-changed', onProfilesChanged)
+    }
   }, [])
 
   const ownedSkillIds = useMemo(() => {
     if (mode !== 'offer' || !phone) return new Set<string>()
     void profileTick
-    return new Set(getMySkillIds())
+    return new Set(getMySkillIdsForPhone(phone))
   }, [mode, phone, profileTick])
 
   const filtered = useMemo(() => {

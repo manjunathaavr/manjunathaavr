@@ -9,9 +9,5 @@ import {
 export function useSession(): SessionUser | null {
   const raw = useSyncExternalStore(subscribeSession, getSessionRaw, () => null)
   if (!raw) return null
-  try {
-    return JSON.parse(raw) as SessionUser
-  } catch {
-    return getSession()
-  }
+  return getSession()
 }

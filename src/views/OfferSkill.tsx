@@ -19,10 +19,11 @@ import {
   availabilityLabels,
   experienceOptions,
   getMyProfiles,
-  getMySkillIds,
   getSenderIdentity,
+  hasMySkillListing,
   hireOptions,
   saveProfile,
+  subscribeSession,
   type AvailabilityType,
   type Gender,
   type SkillRates,
@@ -51,6 +52,25 @@ export function OfferSkill() {
   const [locationHint, setLocationHint] = useState('')
   const [pinLooking, setPinLooking] = useState(false)
   const [locationTouched, setLocationTouched] = useState(false)
+  const [profileTick, setProfileTick] = useState(0)
+
+  useEffect(() => {
+    const onRefresh = () => setProfileTick((n) => n + 1)
+    const unsubSession = subscribeSession(onRefresh)
+    window.addEventListener('sk-profiles-changed', onRefresh)
+    return () => {
+      unsubSession()
+      window.removeEventListener('sk-profiles-changed', onRefresh)
+    }
+  }, [])
+
+  const alreadyListed = useMemo(
+    () =>
+      Boolean(
+        session && skill && hasMySkillListing(skill.id, session.phone),
+      ),
+    [session?.phone, skill?.id, profileTick],
+  )
 
   useEffect(() => {
     if (!session || locationTouched) return
@@ -138,8 +158,6 @@ export function OfferSkill() {
       </div>
     )
   }
-
-  const alreadyListed = session && getMySkillIds().includes(skill.id)
 
   function toggleAvailability(type: AvailabilityType) {
     setAvailability((prev) => {

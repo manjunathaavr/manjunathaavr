@@ -299,13 +299,15 @@ export function saveProfile(
   profile: Omit<SkillProfile, 'id' | 'createdAt'>,
 ): SkillProfile {
   const session = getSession()
-  const ownerPhone = (session?.phone || profile.phone).trim()
+  const ownerPhone = normalizePhone(
+    (session?.phone || profile.phone).trim(),
+  )
   const ownerName = (session?.name || profile.name).trim()
   const profiles = getProfiles()
   const newProfile: SkillProfile = {
     ...profile,
     name: ownerName || profile.name,
-    phone: ownerPhone || profile.phone,
+    phone: ownerPhone || profile.phone.trim(),
     id: `p-${Date.now()}`,
     createdAt: new Date().toISOString(),
   }
@@ -855,21 +857,22 @@ export function getSession(): SessionUser | null {
   }
 }
 
-function pruneOwnedProfileIdsForPhone(phone: string) {
+/** Keep owned-profile ids aligned with the active phone only. */
+function rebuildOwnedProfilesForPhone(phone: string) {
   const key = normalizePhone(phone)
-  if (!key) return
-  const kept = getOwnedProfileIds().filter((id) => {
-    const profile = getProfiles().find((p) => p.id === id)
-    return profile && normalizePhone(profile.phone) === key
-  })
-  localStorage.setItem(OWNED_KEY, JSON.stringify(kept))
+  if (!key) {
+    localStorage.removeItem(OWNED_KEY)
+    return
+  }
+  const ids = getProfilesByPhone(phone).map((p) => p.id)
+  localStorage.setItem(OWNED_KEY, JSON.stringify(ids))
 }
 
 export function setSession(user: SessionUser) {
   const clean = normalizeSession(user)
   localStorage.setItem(SESSION_KEY, JSON.stringify(clean))
   saveSenderIdentity({ name: clean.name, phone: clean.phone })
-  pruneOwnedProfileIdsForPhone(clean.phone)
+  rebuildOwnedProfilesForPhone(clean.phone)
   upsertAccount({
     name: clean.name,
     phone: clean.phone,
@@ -880,6 +883,7 @@ export function setSession(user: SessionUser) {
       syncMyDataToCloud()
     })
   }
+  emitProfilesChanged()
   emitSessionChange()
 }
 
@@ -918,7 +922,9 @@ export function switchRole(role: UserRole): SessionUser | null {
 
 export function clearSession() {
   localStorage.removeItem(SESSION_KEY)
+  localStorage.removeItem(OWNED_KEY)
   emitSessionChange()
+  emitProfilesChanged()
 }
 
 export function getProfilesByPhone(phone: string): SkillProfile[] {
@@ -927,17 +933,37 @@ export function getProfilesByPhone(phone: string): SkillProfile[] {
   return getProfiles().filter((p) => normalizePhone(p.phone) === key)
 }
 
-/** Skills listed by the logged-in user (matched by phone number only). */
-export function getMyProfiles(): SkillProfile[] {
-  const session = getSession()
-  if (!session) return []
-  return getProfilesByPhone(session.phone).sort((a, b) =>
+/** Listings for one phone number (explicit — do not rely on side effects). */
+export function getMyProfilesForPhone(phone: string): SkillProfile[] {
+  return getProfilesByPhone(phone).sort((a, b) =>
     b.createdAt.localeCompare(a.createdAt),
   )
 }
 
+/** Skills listed by the logged-in user (matched by phone number only). */
+export function getMyProfiles(): SkillProfile[] {
+  const session = getSession()
+  if (!session) return []
+  return getMyProfilesForPhone(session.phone)
+}
+
+export function hasMySkillListing(skillId: string, phone?: string): boolean {
+  const session = getSession()
+  const key = normalizePhone(phone || session?.phone || '')
+  if (!key || !skillId) return false
+  return getProfiles().some(
+    (p) => p.skillId === skillId && normalizePhone(p.phone) === key,
+  )
+}
+
+export function getMySkillIdsForPhone(phone: string): string[] {
+  return [...new Set(getMyProfilesForPhone(phone).map((p) => p.skillId))]
+}
+
 export function getMySkillIds(): string[] {
-  return [...new Set(getMyProfiles().map((p) => p.skillId))]
+  const session = getSession()
+  if (!session) return []
+  return getMySkillIdsForPhone(session.phone)
 }
 
 export function detectRolesForPhone(phone: string): UserRole[] {
