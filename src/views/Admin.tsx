@@ -547,12 +547,14 @@ export function Admin() {
                   <span>Giver</span>
                   <span>Phone</span>
                   <span>Skill</span>
-                  <span>Seeker</span>
+                  <span>Location</span>
                   <span>Status</span>
                   <span aria-hidden="true" />
                 </div>
                 <ul className="admin-detail-list">
-                  {filteredRequests.map((r) => (
+                  {[...filteredRequests]
+                    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+                    .map((r) => (
                     <RequestDetailCard
                       key={r.id}
                       request={r}
@@ -920,6 +922,9 @@ function RequestDetailCard({
 }) {
   const skill = getSkillById(request.skillId)
   const seekerName = profile?.name || '—'
+  const location =
+    [request.requesterCity, request.requesterPinCode].filter(Boolean).join(' · ') ||
+    '—'
 
   return (
     <li className={`admin-detail-card${open ? ' admin-detail-card--open' : ''}`}>
@@ -943,7 +948,7 @@ function RequestDetailCard({
         <span className="admin-data-row__skills">
           <span className="admin-chip">{skill?.name || request.skillId}</span>
         </span>
-        <span className="admin-data-row__location">{seekerName}</span>
+        <span className="admin-data-row__location">{location}</span>
         <span className="admin-data-row__status">
           <span className={`admin-status-pill admin-status-pill--${request.status}`}>
             {request.status}
