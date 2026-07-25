@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Swayam Krushi</string>
+    <string name="title_activity_main">Swayam Krushi</string>
+    <string name="package_name">com.swayamkrushi.app</string>
+    <string name="custom_url_scheme">com.swayamkrushi.app</string>
+</resources>

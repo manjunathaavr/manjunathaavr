@@ -1,0 +1,4 @@
+npm install   # already done
+npm.cmd run dev   # http://localhost:3001
+npm run build # production build
+npm run start # serve production build
