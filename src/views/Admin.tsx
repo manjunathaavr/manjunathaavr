@@ -1,11 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState, type FormEvent } from 'react'
+import { useMemo, useState } from 'react'
 import { Header } from '../components/Header'
+import { useSession } from '../hooks/useSession'
 import { getSkillById } from '../data/skills'
 import {
-  ADMIN_DEMO_PASSWORD,
   availabilityLabels,
   clearAllMarketplaceData,
   deleteJobGiverByPhone,
@@ -13,19 +13,19 @@ import {
   deleteProfile,
   deleteRequest,
   formatRates,
+  genderLabels,
   getAdminJobGivers,
   getAdminJobSeekers,
   getAdminStats,
   getProfileById,
   getRequests,
-  isAdminUnlocked,
-  lockAdmin,
+  isSuperAdminSession,
   restoreSampleProfiles,
-  unlockAdmin,
   type AdminJobGiver,
   type AdminJobSeeker,
   type JobRequest,
   type SkillProfile,
+  type UserRole,
 } from '../lib/storage'
 
 type Tab = 'overview' | 'seekers' | 'givers' | 'requests'
@@ -49,10 +49,20 @@ function matchesQuery(haystack: string, q: string) {
   return haystack.toLowerCase().includes(q.trim().toLowerCase())
 }
 
+function roleLabels(roles: UserRole[]) {
+  return roles
+    .map((r) => (r === 'seeker' ? 'I have a skill' : 'I need help'))
+    .join(', ')
+}
+
+function formatCoords(lat?: number, lng?: number) {
+  if (lat == null || lng == null) return ''
+  return `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+}
+
 export function Admin() {
-  const [unlocked, setUnlocked] = useState(() => isAdminUnlocked())
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const session = useSession()
+  const isAdmin = isSuperAdminSession(session)
   const [tab, setTab] = useState<Tab>('overview')
   const [tick, setTick] = useState(0)
   const [search, setSearch] = useState('')
@@ -130,52 +140,37 @@ export function Admin() {
     })
   }, [requests, search])
 
-  function onUnlock(e: FormEvent) {
-    e.preventDefault()
-    if (unlockAdmin(password)) {
-      setUnlocked(true)
-      setError('')
-      setPassword('')
-    } else {
-      setError('Wrong password. Use the demo password shown below.')
-    }
-  }
-
   function confirmDelete(message: string) {
     return window.confirm(message)
   }
 
-  if (!unlocked) {
+  if (!session) {
     return (
       <div className="page">
         <Header />
         <section className="section section--top form-section">
           <h1>Admin panel</h1>
+          <p className="section__lead">Log in to continue.</p>
+          <Link href="/account?tab=login" className="btn btn--primary">
+            Log in
+          </Link>
+        </section>
+      </div>
+    )
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="page">
+        <Header />
+        <section className="section section--top form-section">
+          <h1>Access denied</h1>
           <p className="section__lead">
-            View all job seeker and job giver details in one place.
+            This page is only available to the admin account.
           </p>
-          <form className="profile-form" onSubmit={onUnlock}>
-            <label>
-              Admin password
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
-                autoComplete="current-password"
-                required
-              />
-            </label>
-            {error && (
-              <p className="request-status request-status--declined">{error}</p>
-            )}
-            <button type="submit" className="btn btn--primary btn--block">
-              Open dashboard
-            </button>
-          </form>
-          <p className="hint">
-            Local demo password: <strong>{ADMIN_DEMO_PASSWORD}</strong>
-          </p>
+          <Link href="/" className="back-link">
+            ← Back to site
+          </Link>
         </section>
       </div>
     )
@@ -197,16 +192,6 @@ export function Admin() {
           <div className="account-head__actions">
             <button type="button" className="btn btn--ghost" onClick={refresh}>
               Refresh
-            </button>
-            <button
-              type="button"
-              className="btn btn--ghost"
-              onClick={() => {
-                lockAdmin()
-                setUnlocked(false)
-              }}
-            >
-              Lock
             </button>
           </div>
         </div>
@@ -484,6 +469,11 @@ function SeekerDetailCard({
           <dl className="admin-detail-grid">
             <DetailField label="Name" value={seeker.name} />
             <DetailField label="Phone" value={seeker.phone} />
+            <DetailField
+              label="Gender"
+              value={seeker.gender ? genderLabels[seeker.gender] : '—'}
+            />
+            <DetailField label="Roles" value={roleLabels(seeker.roles) || '—'} />
             <DetailField label="Skills" value={skillNames} />
             <DetailField label="Cities" value={seeker.cities.join(', ') || '—'} />
             <DetailField
@@ -503,6 +493,9 @@ function SeekerDetailCard({
               value={seeker.experience.join(' · ') || '—'}
             />
             <DetailField label="About" value={seeker.about.join(' · ') || '—'} />
+            {seeker.registeredAt && (
+              <DetailField label="Registered" value={formatWhen(seeker.registeredAt)} />
+            )}
             <DetailField label="Last updated" value={formatWhen(seeker.latestAt)} />
           </dl>
 
@@ -523,6 +516,13 @@ function SeekerDetailCard({
                         .filter(Boolean)
                         .join(' · ') || 'No location'}
                     </p>
+                    {formatCoords(listing.latitude, listing.longitude) && (
+                      <p>GPS: {formatCoords(listing.latitude, listing.longitude)}</p>
+                    )}
+                    {listing.gender && (
+                      <p>Gender: {genderLabels[listing.gender]}</p>
+                    )}
+                    {listing.phone && <p>Listing phone: {listing.phone}</p>}
                     {(listing.education || listing.experience) && (
                       <p>
                         {[listing.education, listing.experience]
@@ -599,7 +599,21 @@ function GiverDetailCard({
           <dl className="admin-detail-grid">
             <DetailField label="Name" value={giver.name} />
             <DetailField label="Phone" value={giver.phone} />
+            <DetailField
+              label="Gender"
+              value={giver.gender ? genderLabels[giver.gender] : '—'}
+            />
+            <DetailField label="Roles" value={roleLabels(giver.roles) || '—'} />
             <DetailField label="Skills requested" value={skillNames || '—'} />
+            <DetailField label="Cities" value={giver.cities.join(', ') || '—'} />
+            <DetailField
+              label="Pin codes"
+              value={giver.pinCodes.join(', ') || '—'}
+            />
+            <DetailField
+              label="Addresses"
+              value={giver.addresses.join(' · ') || '—'}
+            />
             <DetailField
               label="Hire types"
               value={
@@ -612,6 +626,9 @@ function GiverDetailCard({
             <DetailField label="Pending" value={String(giver.pending)} />
             <DetailField label="Accepted" value={String(giver.accepted)} />
             <DetailField label="Declined" value={String(giver.declined)} />
+            {giver.registeredAt && (
+              <DetailField label="Registered" value={formatWhen(giver.registeredAt)} />
+            )}
             <DetailField label="Last active" value={formatWhen(giver.latestAt)} />
           </dl>
 
@@ -637,6 +654,16 @@ function GiverDetailCard({
                       <p>
                         {availabilityLabels[r.hireType] || r.hireType}
                       </p>
+                    )}
+                    {(r.requesterCity || r.requesterPinCode || r.requesterAddress) && (
+                      <p>
+                        {[r.requesterCity, r.requesterPinCode, r.requesterAddress]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </p>
+                    )}
+                    {formatCoords(r.requesterLatitude, r.requesterLongitude) && (
+                      <p>GPS: {formatCoords(r.requesterLatitude, r.requesterLongitude)}</p>
                     )}
                     {r.note && <p>{r.note}</p>}
                     <p className="hint">{formatWhen(r.createdAt)}</p>
@@ -689,6 +716,21 @@ function RequestRow({
           : ''}
       </p>
       {request.note && <p>{request.note}</p>}
+      {(request.requesterCity ||
+        request.requesterPinCode ||
+        request.requesterAddress) && (
+        <p className="profile-card__meta">
+          Location:{' '}
+          {[request.requesterCity, request.requesterPinCode, request.requesterAddress]
+            .filter(Boolean)
+            .join(' · ')}
+        </p>
+      )}
+      {formatCoords(request.requesterLatitude, request.requesterLongitude) && (
+        <p className="profile-card__meta">
+          GPS: {formatCoords(request.requesterLatitude, request.requesterLongitude)}
+        </p>
+      )}
       <div className="admin-row-actions">
         <p className="hint" style={{ margin: 0 }}>
           {formatWhen(request.createdAt)}

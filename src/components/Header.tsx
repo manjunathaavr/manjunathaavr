@@ -6,7 +6,7 @@ import { Suspense } from 'react'
 import { BrandLogo } from '@/components/BrandLogo'
 import { useAppNotifications } from '@/hooks/useAppNotifications'
 import { useSession } from '@/hooks/useSession'
-import { clearSession, getMyProfiles } from '@/lib/storage'
+import { clearSession, getMyProfiles, isSuperAdminSession } from '@/lib/storage'
 
 function NavBadge({ count }: { count: number }) {
   if (count <= 0) return null
@@ -35,6 +35,7 @@ function HeaderNav() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const role = session?.activeRole
+  const isAdmin = isSuperAdminSession(session)
   const { incoming, accepted, toast, dismissToast } = useAppNotifications()
   const hasSkills = Boolean(session && getMyProfiles().length > 0)
 
@@ -120,6 +121,11 @@ function HeaderNav() {
                   Incoming
                   <NavBadge count={incoming} />
                 </Link>
+                {isAdmin && (
+                  <Link href="/admin" className={navLinkClass(pathname === '/admin')}>
+                    Admin
+                  </Link>
+                )}
                 <button type="button" className="nav-text-btn" onClick={onLogout}>
                   Log out
                 </button>
@@ -147,6 +153,11 @@ function HeaderNav() {
                   My requests
                   <NavBadge count={accepted} />
                 </Link>
+                {isAdmin && (
+                  <Link href="/admin" className={navLinkClass(pathname === '/admin')}>
+                    Admin
+                  </Link>
+                )}
                 <button type="button" className="nav-text-btn" onClick={onLogout}>
                   Log out
                 </button>

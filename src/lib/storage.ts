@@ -1159,11 +1159,15 @@ export function getMyOutgoingRequests(): JobRequest[] {
 export type AdminSeekerListing = {
   id: string
   skillId: string
+  gender: Gender
+  phone: string
   education: string
   experience: string
   address: string
   city: string
   pinCode: string
+  latitude?: number
+  longitude?: number
   availability: AvailabilityType[]
   rates: SkillRates
   about: string
@@ -1173,6 +1177,8 @@ export type AdminSeekerListing = {
 export type AdminJobSeeker = {
   phone: string
   name: string
+  gender?: Gender
+  roles: UserRole[]
   skills: string[]
   cities: string[]
   pinCodes: string[]
@@ -1183,6 +1189,7 @@ export type AdminJobSeeker = {
   listingCount: number
   listings: AdminSeekerListing[]
   latestAt: string
+  registeredAt?: string
 }
 
 export type AdminGiverRequest = {
@@ -1195,19 +1202,30 @@ export type AdminGiverRequest = {
   createdAt: string
   seekerName: string
   seekerPhone: string
+  requesterAddress?: string
+  requesterCity?: string
+  requesterPinCode?: string
+  requesterLatitude?: number
+  requesterLongitude?: number
 }
 
 export type AdminJobGiver = {
   phone: string
   name: string
+  gender?: Gender
+  roles: UserRole[]
   requestCount: number
   pending: number
   accepted: number
   declined: number
   skillsRequested: string[]
   hireTypes: string[]
+  cities: string[]
+  pinCodes: string[]
+  addresses: string[]
   requests: AdminGiverRequest[]
   latestAt: string
+  registeredAt?: string
 }
 
 export type AdminStats = {
@@ -1227,11 +1245,15 @@ export function getAdminJobSeekers(): AdminJobSeeker[] {
     const listing: AdminSeekerListing = {
       id: p.id,
       skillId: p.skillId,
+      gender: p.gender,
+      phone: p.phone,
       education: p.education,
       experience: p.experience,
       address: p.address,
       city: p.city,
       pinCode: p.pinCode,
+      latitude: p.latitude,
+      longitude: p.longitude,
       availability: p.availability,
       rates: p.rates,
       about: p.about,
@@ -1242,6 +1264,8 @@ export function getAdminJobSeekers(): AdminJobSeeker[] {
       map.set(phone, {
         phone: p.phone || phone,
         name: p.name,
+        gender: p.gender,
+        roles: ['seeker'],
         skills: [p.skillId],
         cities: p.city ? [p.city] : [],
         pinCodes: p.pinCode ? [p.pinCode] : [],
@@ -1275,9 +1299,42 @@ export function getAdminJobSeekers(): AdminJobSeeker[] {
         row.latestAt = p.createdAt
         row.name = p.name
         row.phone = p.phone || row.phone
+        row.gender = p.gender
       }
     }
   }
+
+  ensureAccountFromSender()
+  for (const account of Object.values(getAccountsMap())) {
+    const key = normalizePhone(account.phone)
+    if (!key || !account.roles.includes('seeker')) continue
+    const row = map.get(key)
+    if (row) {
+      row.roles = [...new Set([...row.roles, ...account.roles])]
+      row.gender = row.gender ?? account.gender
+      row.name = row.name || account.name
+      row.registeredAt = account.updatedAt
+      continue
+    }
+    map.set(key, {
+      phone: account.phone,
+      name: account.name,
+      gender: account.gender,
+      roles: account.roles,
+      skills: [],
+      cities: [],
+      pinCodes: [],
+      addresses: [],
+      education: [],
+      experience: [],
+      about: [],
+      listingCount: 0,
+      listings: [],
+      latestAt: account.updatedAt,
+      registeredAt: account.updatedAt,
+    })
+  }
+
   return Array.from(map.values()).sort((a, b) =>
     b.latestAt.localeCompare(a.latestAt),
   )
@@ -1298,18 +1355,28 @@ export function getAdminJobGivers(): AdminJobGiver[] {
       createdAt: r.createdAt,
       seekerName: profile?.name || '—',
       seekerPhone: profile?.phone || '—',
+      requesterAddress: r.requesterAddress,
+      requesterCity: r.requesterCity,
+      requesterPinCode: r.requesterPinCode,
+      requesterLatitude: r.requesterLatitude,
+      requesterLongitude: r.requesterLongitude,
     }
     const row = map.get(phone)
     if (!row) {
       map.set(phone, {
         phone: r.requesterPhone,
         name: r.requesterName,
+        gender: r.requesterGender,
+        roles: ['giver'],
         requestCount: 1,
         pending: r.status === 'pending' ? 1 : 0,
         accepted: r.status === 'accepted' ? 1 : 0,
         declined: r.status === 'declined' ? 1 : 0,
         skillsRequested: [r.skillId],
         hireTypes: r.hireType ? [r.hireType] : [],
+        cities: r.requesterCity ? [r.requesterCity] : [],
+        pinCodes: r.requesterPinCode ? [r.requesterPinCode] : [],
+        addresses: r.requesterAddress ? [r.requesterAddress] : [],
         requests: [detail],
         latestAt: r.createdAt,
       })
@@ -1324,14 +1391,57 @@ export function getAdminJobGivers(): AdminJobGiver[] {
       if (r.hireType && !row.hireTypes.includes(r.hireType)) {
         row.hireTypes.push(r.hireType)
       }
+      if (r.requesterCity && !row.cities.includes(r.requesterCity)) {
+        row.cities.push(r.requesterCity)
+      }
+      if (r.requesterPinCode && !row.pinCodes.includes(r.requesterPinCode)) {
+        row.pinCodes.push(r.requesterPinCode)
+      }
+      if (r.requesterAddress && !row.addresses.includes(r.requesterAddress)) {
+        row.addresses.push(r.requesterAddress)
+      }
       row.requests.push(detail)
       if (r.createdAt > row.latestAt) {
         row.latestAt = r.createdAt
         row.name = r.requesterName
         row.phone = r.requesterPhone
+        row.gender = r.requesterGender ?? row.gender
       }
     }
   }
+
+  ensureAccountFromSender()
+  for (const account of Object.values(getAccountsMap())) {
+    const key = normalizePhone(account.phone)
+    if (!key || !account.roles.includes('giver')) continue
+    const row = map.get(key)
+    if (row) {
+      row.roles = [...new Set([...row.roles, ...account.roles])]
+      row.gender = row.gender ?? account.gender
+      row.name = row.name || account.name
+      row.registeredAt = account.updatedAt
+      continue
+    }
+    map.set(key, {
+      phone: account.phone,
+      name: account.name,
+      gender: account.gender,
+      roles: account.roles,
+      requestCount: 0,
+      pending: 0,
+      accepted: 0,
+      declined: 0,
+      skillsRequested: [],
+      hireTypes: [],
+      cities: [],
+      pinCodes: [],
+      addresses: [],
+      requests: [],
+      latestAt: account.updatedAt,
+      registeredAt: account.updatedAt,
+    })
+  }
+
   return Array.from(map.values()).sort((a, b) =>
     b.latestAt.localeCompare(a.latestAt),
   )
@@ -1348,6 +1458,20 @@ export function getAdminStats(): AdminStats {
     requestsAccepted: requests.filter((r) => r.status === 'accepted').length,
     requestsDeclined: requests.filter((r) => r.status === 'declined').length,
   }
+}
+
+/** Only this phone number can open the admin panel */
+export const SUPER_ADMIN_PHONE = '9620115678'
+
+export function isSuperAdminPhone(phone: string): boolean {
+  return normalizePhone(phone) === SUPER_ADMIN_PHONE
+}
+
+export function isSuperAdminSession(
+  session: SessionUser | null | undefined,
+): boolean {
+  if (!session) return false
+  return isSuperAdminPhone(session.phone)
 }
 
 const ADMIN_KEY = 'swayam-krushi-admin'
