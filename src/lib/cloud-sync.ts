@@ -39,3 +39,41 @@ export async function fetchCloudAdminData(
     return null
   }
 }
+
+/** Push this browser's account, skill listings, and requests to the cloud. */
+export function syncMyDataToCloud() {
+  if (typeof window === 'undefined') return
+  import('./storage').then(
+    ({
+      getAccountByPhone,
+      getMyProfiles,
+      getRequests,
+      getSession,
+      normalizePhone,
+    }) => {
+      const session = getSession()
+      if (!session) return
+
+      const accounts: StoredAccount[] = []
+      const account = getAccountByPhone(session.phone)
+      if (account) accounts.push(account)
+
+      const profiles = getMyProfiles()
+      const phone = normalizePhone(session.phone)
+      const requests = getRequests().filter(
+        (r) => normalizePhone(r.requesterPhone) === phone,
+      )
+
+      if (!accounts.length && !profiles.length && !requests.length) return
+
+      fetch('/api/sync/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accounts, profiles, requests }),
+        keepalive: true,
+      }).catch(() => {
+        /* offline or cloud not configured */
+      })
+    },
+  )
+}

@@ -791,6 +791,11 @@ export function setSession(user: SessionUser) {
     phone: clean.phone,
     roles: clean.roles,
   })
+  if (typeof window !== 'undefined') {
+    import('./cloud-sync').then(({ syncMyDataToCloud }) => {
+      syncMyDataToCloud()
+    })
+  }
   emitSessionChange()
 }
 

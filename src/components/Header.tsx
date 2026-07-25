@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import { BrandLogo } from '@/components/BrandLogo'
 import { useAppNotifications } from '@/hooks/useAppNotifications'
 import { useSession } from '@/hooks/useSession'
+import { syncMyDataToCloud } from '@/lib/cloud-sync'
 import { clearSession, getMyProfiles, isSuperAdminSession } from '@/lib/storage'
 
 function NavBadge({ count }: { count: number }) {
@@ -42,6 +43,10 @@ function HeaderNav() {
   const accountRole = searchParams.get('role')
   const onAccount = pathname === '/account'
   const onHome = pathname === '/'
+
+  useEffect(() => {
+    if (session) syncMyDataToCloud()
+  }, [session?.phone])
 
   function onLogout() {
     clearSession()
