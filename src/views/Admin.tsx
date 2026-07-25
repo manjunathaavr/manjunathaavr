@@ -180,22 +180,6 @@ export function Admin() {
     <div className="page admin-page">
       <Header />
       <section className="section section--top">
-        <div className="account-head">
-          <div>
-            <p className="eyebrow">Admin</p>
-            <h1>User dashboard</h1>
-            <p className="section__lead">
-              Full details for every job seeker and job giver (saved in this
-              browser).
-            </p>
-          </div>
-          <div className="account-head__actions">
-            <button type="button" className="btn btn--ghost" onClick={refresh}>
-              Refresh
-            </button>
-          </div>
-        </div>
-
         <div className="admin-tabs" role="tablist" aria-label="Admin sections">
           {(
             [
