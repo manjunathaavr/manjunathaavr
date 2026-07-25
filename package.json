@@ -9,9 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@vercel/kv": "^3.0.0",
     "next": "^15.5.0",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "redis": "^4.7.1"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",

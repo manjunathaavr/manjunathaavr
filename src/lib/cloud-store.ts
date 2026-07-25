@@ -1,6 +1,7 @@
 import type { JobRequest, StoredAccount, SkillProfile } from './storage'
 import { normalizePhone } from './storage'
 import { kvConfigured, kvGetJson, kvSetJson } from './kv-rest'
+import { redisGetJson, redisSetJson, redisUrlConfigured } from './redis-url'
 
 const STORE_KEY = 'sn:marketplace'
 
@@ -21,12 +22,24 @@ function emptyStore(): CloudMarketplace {
 }
 
 export function isCloudStoreConfigured(): boolean {
-  return kvConfigured()
+  return kvConfigured() || redisUrlConfigured()
+}
+
+async function cloudGetJson<T>(key: string): Promise<T | null> {
+  if (kvConfigured()) return kvGetJson<T>(key)
+  if (redisUrlConfigured()) return redisGetJson<T>(key)
+  return null
+}
+
+async function cloudSetJson(key: string, value: unknown): Promise<boolean> {
+  if (kvConfigured()) return kvSetJson(key, value)
+  if (redisUrlConfigured()) return redisSetJson(key, value)
+  return false
 }
 
 export async function readCloudMarketplace(): Promise<CloudMarketplace> {
-  if (!kvConfigured()) return emptyStore()
-  const store = await kvGetJson<CloudMarketplace>(STORE_KEY)
+  if (!isCloudStoreConfigured()) return emptyStore()
+  const store = await cloudGetJson<CloudMarketplace>(STORE_KEY)
   if (!store) return emptyStore()
   return {
     accounts: store.accounts || {},
@@ -37,9 +50,9 @@ export async function readCloudMarketplace(): Promise<CloudMarketplace> {
 }
 
 async function writeCloudMarketplace(store: CloudMarketplace): Promise<boolean> {
-  if (!kvConfigured()) return false
+  if (!isCloudStoreConfigured()) return false
   store.updatedAt = new Date().toISOString()
-  return kvSetJson(STORE_KEY, store)
+  return cloudSetJson(STORE_KEY, store)
 }
 
 export async function cloudUpsertAccount(account: StoredAccount): Promise<boolean> {
