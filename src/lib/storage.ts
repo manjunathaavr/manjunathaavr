@@ -298,19 +298,22 @@ export function getProfiles(): SkillProfile[] {
 export function saveProfile(
   profile: Omit<SkillProfile, 'id' | 'createdAt'>,
 ): SkillProfile {
+  const session = getSession()
+  const ownerPhone = (session?.phone || profile.phone).trim()
+  const ownerName = (session?.name || profile.name).trim()
   const profiles = getProfiles()
   const newProfile: SkillProfile = {
     ...profile,
+    name: ownerName || profile.name,
+    phone: ownerPhone || profile.phone,
     id: `p-${Date.now()}`,
     createdAt: new Date().toISOString(),
   }
   profiles.unshift(newProfile)
   localStorage.setItem(STORAGE_KEY, JSON.stringify(profiles))
   rememberOwnedProfile(newProfile.id)
-  enterAsRole(
-    { name: newProfile.name, phone: newProfile.phone },
-    'seeker',
-  )
+  enterAsRole({ name: newProfile.name, phone: newProfile.phone }, 'seeker')
+  emitProfilesChanged()
   if (typeof window !== 'undefined') {
     import('./cloud-sync').then(({ syncToCloud }) => {
       syncToCloud({ type: 'profile', data: newProfile })
@@ -321,6 +324,15 @@ export function saveProfile(
 
 function writeProfiles(profiles: SkillProfile[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(profiles))
+  emitProfilesChanged()
+}
+
+function emitProfilesChanged() {
+  try {
+    window.dispatchEvent(new CustomEvent('sk-profiles-changed'))
+  } catch {
+    /* ignore */
+  }
 }
 
 /** Merge cloud account, profiles, and requests into this browser. */
@@ -346,10 +358,18 @@ export function hydrateCloudUserData(data: {
   }
 
   if (data.profiles?.length) {
+    const accountPhone = data.account
+      ? normalizePhone(data.account.phone)
+      : ''
     const map = new Map(getProfiles().map((p) => [p.id, p]))
     for (const profile of data.profiles) {
       map.set(profile.id, profile)
-      rememberOwnedProfile(profile.id)
+      if (
+        accountPhone &&
+        normalizePhone(profile.phone) === accountPhone
+      ) {
+        rememberOwnedProfile(profile.id)
+      }
     }
     writeProfiles(Array.from(map.values()))
   }
@@ -907,21 +927,12 @@ export function getProfilesByPhone(phone: string): SkillProfile[] {
   return getProfiles().filter((p) => normalizePhone(p.phone) === key)
 }
 
-/** Skills already listed by the logged-in user (by phone + owned ids) */
+/** Skills listed by the logged-in user (matched by phone number only). */
 export function getMyProfiles(): SkillProfile[] {
   const session = getSession()
   if (!session) return []
-  const key = normalizePhone(session.phone)
-  if (!key) return []
-  const byPhone = getProfilesByPhone(session.phone)
-  const ownedIds = new Set(getOwnedProfileIds())
-  const owned = getProfiles().filter(
-    (p) => ownedIds.has(p.id) && normalizePhone(p.phone) === key,
-  )
-  const map = new Map<string, SkillProfile>()
-  for (const p of [...byPhone, ...owned]) map.set(p.id, p)
-  return Array.from(map.values()).sort(
-    (a, b) => b.createdAt.localeCompare(a.createdAt),
+  return getProfilesByPhone(session.phone).sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt),
   )
 }
 
@@ -1016,15 +1027,20 @@ export async function registerWithPhoneAsync(input: {
       message: 'An account already exists for this number. Please log in.',
     }
   }
-  const { fetchCloudUserData } = await import('./cloud-sync')
+  const { fetchCloudUserData, syncAccountToCloudAwait } = await import(
+    './cloud-sync'
+  )
   const cloud = await fetchCloudUserData(input.phone)
   if (cloud?.account) {
-    return {
-      ok: false,
-      message: 'An account already exists for this number. Please log in.',
-    }
+    hydrateCloudUserData(cloud)
+    return loginWithPhone(input.phone, input.role)
   }
-  return registerWithPhone(input)
+  const result = registerWithPhone(input)
+  if (result.ok) {
+    const account = getAccountByPhone(key)
+    if (account) await syncAccountToCloudAwait(account)
+  }
+  return result
 }
 
 /** Login with mobile; optional role picks the workspace (seeker / giver). */
@@ -1037,18 +1053,33 @@ export async function loginWithPhoneAsync(
     return { ok: false, message: 'Enter a valid 10-digit mobile number.' }
   }
 
-  if (!hasLocalUserData(phone)) {
-    const { fetchCloudUserData } = await import('./cloud-sync')
-    const cloud = await fetchCloudUserData(phone)
-    if (
-      cloud &&
-      (cloud.account || cloud.profiles.length || cloud.requests.length)
-    ) {
-      hydrateCloudUserData(cloud)
+  const { fetchCloudUserData, syncAccountToCloudAwait } = await import(
+    './cloud-sync'
+  )
+  const cloud = await fetchCloudUserData(phone)
+  if (
+    cloud &&
+    (cloud.account || cloud.profiles.length || cloud.requests.length)
+  ) {
+    hydrateCloudUserData(cloud)
+  }
+
+  const result = loginWithPhone(phone, preferredRole)
+  if (result.ok) {
+    const account = getAccountByPhone(key)
+    if (account) await syncAccountToCloudAwait(account)
+    return result
+  }
+
+  if (!hasLocalUserData(phone) && cloud && !cloud.configured) {
+    return {
+      ok: false,
+      message:
+        'No account on this device. Tap Sign up below to register here first.',
     }
   }
 
-  return loginWithPhone(phone, preferredRole)
+  return result
 }
 
 /** @deprecated Use loginWithPhoneAsync for cross-device login */

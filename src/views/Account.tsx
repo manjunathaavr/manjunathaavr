@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { GenderTabs } from '../components/GenderTabs'
 import { Header } from '../components/Header'
 import { BrandLogo } from '../components/BrandLogo'
@@ -41,7 +41,20 @@ export function Account() {
   const [gender, setGender] = useState<Gender | ''>('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const myProfiles = session ? getMyProfiles() : []
+  const [profileTick, setProfileTick] = useState(0)
+
+  useEffect(() => {
+    const onProfilesChanged = () => setProfileTick((n) => n + 1)
+    window.addEventListener('sk-profiles-changed', onProfilesChanged)
+    return () =>
+      window.removeEventListener('sk-profiles-changed', onProfilesChanged)
+  }, [])
+
+  const myProfiles = useMemo(() => {
+    void profileTick
+    if (!session) return []
+    return getMyProfiles()
+  }, [session, profileTick])
 
   useEffect(() => {
     if (roleFromUrl) setRole(roleFromUrl)

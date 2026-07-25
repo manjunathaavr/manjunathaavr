@@ -18,6 +18,24 @@ export function syncToCloud(payload: SyncPayload) {
   })
 }
 
+/** Wait until account is saved to cloud (used on sign-up / login). */
+export async function syncAccountToCloudAwait(
+  account: StoredAccount,
+): Promise<boolean> {
+  if (typeof window === 'undefined') return false
+  try {
+    const res = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'account', data: account }),
+    })
+    const data = (await res.json()) as { ok?: boolean; reason?: string }
+    return res.ok && data.ok !== false
+  } catch {
+    return false
+  }
+}
+
 export type CloudAdminData = {
   configured: boolean
   accounts: StoredAccount[]

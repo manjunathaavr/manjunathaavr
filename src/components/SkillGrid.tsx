@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { memo, useMemo, useState, type CSSProperties } from 'react'
+import { memo, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { skills, type Skill } from '../data/skills'
 import { useSession } from '../hooks/useSession'
 import { getMySkillIds } from '../lib/storage'
@@ -62,11 +62,20 @@ export function SkillGrid({ mode }: Props) {
   const [query, setQuery] = useState('')
   const session = useSession()
   const phone = session?.phone
+  const [profileTick, setProfileTick] = useState(0)
+
+  useEffect(() => {
+    const onProfilesChanged = () => setProfileTick((n) => n + 1)
+    window.addEventListener('sk-profiles-changed', onProfilesChanged)
+    return () =>
+      window.removeEventListener('sk-profiles-changed', onProfilesChanged)
+  }, [])
 
   const ownedSkillIds = useMemo(() => {
     if (mode !== 'offer' || !phone) return new Set<string>()
+    void profileTick
     return new Set(getMySkillIds())
-  }, [mode, phone])
+  }, [mode, phone, profileTick])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
