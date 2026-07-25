@@ -835,10 +835,21 @@ export function getSession(): SessionUser | null {
   }
 }
 
+function pruneOwnedProfileIdsForPhone(phone: string) {
+  const key = normalizePhone(phone)
+  if (!key) return
+  const kept = getOwnedProfileIds().filter((id) => {
+    const profile = getProfiles().find((p) => p.id === id)
+    return profile && normalizePhone(profile.phone) === key
+  })
+  localStorage.setItem(OWNED_KEY, JSON.stringify(kept))
+}
+
 export function setSession(user: SessionUser) {
   const clean = normalizeSession(user)
   localStorage.setItem(SESSION_KEY, JSON.stringify(clean))
   saveSenderIdentity({ name: clean.name, phone: clean.phone })
+  pruneOwnedProfileIdsForPhone(clean.phone)
   upsertAccount({
     name: clean.name,
     phone: clean.phone,
@@ -900,9 +911,13 @@ export function getProfilesByPhone(phone: string): SkillProfile[] {
 export function getMyProfiles(): SkillProfile[] {
   const session = getSession()
   if (!session) return []
+  const key = normalizePhone(session.phone)
+  if (!key) return []
   const byPhone = getProfilesByPhone(session.phone)
   const ownedIds = new Set(getOwnedProfileIds())
-  const owned = getProfiles().filter((p) => ownedIds.has(p.id))
+  const owned = getProfiles().filter(
+    (p) => ownedIds.has(p.id) && normalizePhone(p.phone) === key,
+  )
   const map = new Map<string, SkillProfile>()
   for (const p of [...byPhone, ...owned]) map.set(p.id, p)
   return Array.from(map.values()).sort(
