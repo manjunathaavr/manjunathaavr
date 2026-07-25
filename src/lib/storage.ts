@@ -318,7 +318,10 @@ export async function saveProfile(
   emitProfilesChanged()
   if (typeof window !== 'undefined') {
     const { syncToCloudAwait } = await import('./cloud-sync')
-    await syncToCloudAwait({ type: 'profile', data: newProfile })
+    await Promise.race([
+      syncToCloudAwait({ type: 'profile', data: newProfile }),
+      new Promise<boolean>((resolve) => window.setTimeout(() => resolve(false), 8000)),
+    ])
   }
   return newProfile
 }

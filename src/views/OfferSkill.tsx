@@ -227,8 +227,37 @@ export function OfferSkill() {
       alert('You already listed this skill. Choose another from Add skill.')
       return
     }
+
+    const trimmedName = name.trim()
+    const trimmedPhone = phone.trim()
+    const trimmedAddress = address.trim()
+    const trimmedCity = city.trim()
     const pin = pinCode.trim()
 
+    if (!trimmedName) {
+      alert('Please enter your full name.')
+      return
+    }
+    if (!education.trim()) {
+      alert('Please select your education.')
+      return
+    }
+    if (!experience.trim()) {
+      alert('Please select your experience.')
+      return
+    }
+    if (!trimmedPhone.replace(/\D/g, '').match(/^\d{10}$/)) {
+      alert('Please enter a valid 10-digit mobile number.')
+      return
+    }
+    if (!trimmedAddress) {
+      alert('Please enter your address (street or landmark).')
+      return
+    }
+    if (!trimmedCity) {
+      alert('Please enter your city.')
+      return
+    }
     if (!/^\d{6}$/.test(pin)) {
       alert('Please enter a valid 6-digit pin code.')
       return
@@ -248,47 +277,53 @@ export function OfferSkill() {
       cleanRates[type] = amount
     }
 
-    const resolvedGender: Gender =
-      gender ||
-      getMyProfiles()[0]?.gender ||
-      getSenderIdentity()?.gender ||
-      'male'
-
-    let lat = latitude
-    let lng = longitude
-    if (lat == null || lng == null) {
-      const coords = await captureCoordinates()
-      if (coords) {
-        lat = coords.latitude
-        lng = coords.longitude
-        setLatitude(lat)
-        setLongitude(lng)
-      }
-    }
-
     setSaving(true)
     try {
+      const resolvedGender: Gender =
+        gender ||
+        getMyProfiles()[0]?.gender ||
+        getSenderIdentity()?.gender ||
+        'male'
+
+      // GPS is optional when city + pin are entered manually.
+      let lat = latitude
+      let lng = longitude
+      if (lat == null || lng == null) {
+        const coords = await Promise.race([
+          captureCoordinates(),
+          new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 6000)),
+        ])
+        if (coords) {
+          lat = coords.latitude
+          lng = coords.longitude
+          setLatitude(lat)
+          setLongitude(lng)
+        }
+      }
+
       await saveProfile({
-      skillId: skill!.id,
-      name: name.trim(),
-      gender: resolvedGender,
-      education: education.trim(),
-      experience: experience.trim(),
-      phone: phone.trim(),
-      address: address.trim(),
-      city: city.trim(),
-      pinCode: pin,
-      latitude: lat,
-      longitude: lng,
-      availability,
-      rates: cleanRates,
-      about: String(
-        (e.currentTarget.elements.namedItem('about') as HTMLTextAreaElement)
-          ?.value || '',
-      ).trim(),
+        skillId: skill!.id,
+        name: trimmedName,
+        gender: resolvedGender,
+        education: education.trim(),
+        experience: experience.trim(),
+        phone: trimmedPhone,
+        address: trimmedAddress,
+        city: trimmedCity,
+        pinCode: pin,
+        latitude: lat,
+        longitude: lng,
+        availability,
+        rates: cleanRates,
+        about: String(
+          (e.currentTarget.elements.namedItem('about') as HTMLTextAreaElement)
+            ?.value || '',
+        ).trim(),
       })
 
       setSaved(true)
+    } catch {
+      alert('Could not save your skill. Check your internet and try again.')
     } finally {
       setSaving(false)
     }
@@ -366,7 +401,7 @@ export function OfferSkill() {
           </div>
         </div>
 
-        <form className="profile-form offer-form" onSubmit={onSubmit}>
+        <form className="profile-form offer-form" onSubmit={onSubmit} noValidate>
           <label>
             Full name <span className="req">*</span>
             <input
