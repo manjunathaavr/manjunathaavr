@@ -2742,13 +2742,13 @@ p {
 
 .admin-data-head {
   padding: 0.55rem 0.75rem;
-  background: #f3f4f6;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: linear-gradient(180deg, #e8f3ec 0%, #dceee3 100%);
+  border-bottom: 1px solid #b8d4c4;
   font-size: 0.65rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #6b7280;
+  color: #1b4332;
 }
 
 .admin-data-row {
@@ -3096,9 +3096,9 @@ p {
 }
 
 .admin-tab--on {
-  background: rgba(45, 106, 79, 0.1);
-  border-color: rgba(45, 106, 79, 0.35);
-  color: #2d6a4f;
+  background: #e8f3ec;
+  border-color: #95c9a8;
+  color: #1b4332;
 }
 
 .admin-stats {
