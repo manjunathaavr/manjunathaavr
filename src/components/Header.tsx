@@ -7,7 +7,7 @@ import { BrandLogo } from '@/components/BrandLogo'
 import { useAppNotifications } from '@/hooks/useAppNotifications'
 import { useSession } from '@/hooks/useSession'
 import { syncMyDataToCloud } from '@/lib/cloud-sync'
-import { clearSession, getMyProfiles, isSuperAdminSession } from '@/lib/storage'
+import { clearSession, isSuperAdminSession } from '@/lib/storage'
 
 function NavBadge({ count }: { count: number }) {
   if (count <= 0) return null
@@ -38,7 +38,6 @@ function HeaderNav() {
   const role = session?.activeRole
   const isAdmin = isSuperAdminSession(session)
   const { incoming, accepted, toast, dismissToast } = useAppNotifications()
-  const hasSkills = Boolean(session && getMyProfiles().length > 0)
 
   const accountRole = searchParams.get('role')
   const onAccount = pathname === '/account'
@@ -110,15 +109,12 @@ function HeaderNav() {
                 <span className="role-pill" title="You are in I have a skill mode">
                   I have a skill
                 </span>
-                {hasSkills ? (
-                  <Link href="/account" className={navLinkClass(pathname === '/account')}>
-                    My skills
-                  </Link>
-                ) : (
-                  <Link href="/offer" className={navLinkClass(pathname.startsWith('/offer'))}>
-                    Add skill
-                  </Link>
-                )}
+                <Link href="/account" className={navLinkClass(pathname === '/account')}>
+                  My skills
+                </Link>
+                <Link href="/offer" className={navLinkClass(pathname.startsWith('/offer'))}>
+                  Add skill
+                </Link>
                 <Link
                   href="/requests"
                   className={`nav-link-badge${pathname === '/requests' ? ' active' : ''}`}
