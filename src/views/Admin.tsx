@@ -313,63 +313,65 @@ export function Admin() {
           </p>
         )}
 
-        <div className="admin-tabs" role="tablist" aria-label="Admin sections">
-          {(
-            [
-              ['overview', 'Overview'],
-              ['seekers', `Job seekers (${stats.jobSeekers})`],
-              ['givers', `Job givers (${stats.jobGivers})`],
-              ['requests', `Requests (${stats.requestsTotal})`],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              aria-selected={tab === id}
-              className={`admin-tab${tab === id ? ' admin-tab--on' : ''}`}
-              onClick={() => {
-                setTab(id)
-                setSearch('')
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <div className="admin-sticky-bar">
+          <div className="admin-tabs" role="tablist" aria-label="Admin sections">
+            {(
+              [
+                ['overview', 'Overview'],
+                ['seekers', `Job seekers (${stats.jobSeekers})`],
+                ['givers', `Job givers (${stats.jobGivers})`],
+                ['requests', `Requests (${stats.requestsTotal})`],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={tab === id}
+                className={`admin-tab${tab === id ? ' admin-tab--on' : ''}`}
+                onClick={() => {
+                  setTab(id)
+                  setSearch('')
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
 
-        {tab !== 'overview' && (
-          <label className="admin-search">
-            <svg
-              className="admin-search__icon"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              aria-hidden="true"
-            >
-              <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="2" />
-              <path
-                d="M16.5 16.5L21 21"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
+          {tab !== 'overview' && (
+            <label className="admin-search">
+              <svg
+                className="admin-search__icon"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="2" />
+                <path
+                  d="M16.5 16.5L21 21"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <span className="sr-only">Search users</span>
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={
+                  tab === 'seekers'
+                    ? 'Search by name, phone, skill, city…'
+                    : tab === 'givers'
+                      ? 'Search by name, phone, skill…'
+                      : 'Search requests…'
+                }
               />
-            </svg>
-            <span className="sr-only">Search users</span>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={
-                tab === 'seekers'
-                  ? 'Search by name, phone, skill, city…'
-                  : tab === 'givers'
-                    ? 'Search by name, phone, skill…'
-                    : 'Search requests…'
-              }
-            />
-          </label>
-        )}
+            </label>
+          )}
+        </div>
 
         {tab === 'overview' && (
           <div className="admin-panel">
