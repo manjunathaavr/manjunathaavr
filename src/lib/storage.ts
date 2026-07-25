@@ -311,6 +311,11 @@ export function saveProfile(
     { name: newProfile.name, phone: newProfile.phone },
     'seeker',
   )
+  if (typeof window !== 'undefined') {
+    import('./cloud-sync').then(({ syncToCloud }) => {
+      syncToCloud({ type: 'profile', data: newProfile })
+    })
+  }
   return newProfile
 }
 
@@ -627,6 +632,11 @@ function writeAccountsMap(map: Record<string, StoredAccount>) {
   localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(map))
 }
 
+export function getAllAccounts(): StoredAccount[] {
+  ensureAccountFromSender()
+  return Object.values(getAccountsMap())
+}
+
 export function getAccountByPhone(phone: string): StoredAccount | null {
   const key = normalizePhone(phone)
   if (!key) return null
@@ -658,6 +668,11 @@ export function upsertAccount(input: {
   }
   map[key] = next
   writeAccountsMap(map)
+  if (typeof window !== 'undefined') {
+    import('./cloud-sync').then(({ syncToCloud }) => {
+      syncToCloud({ type: 'account', data: next })
+    })
+  }
   return next
 }
 
@@ -1055,6 +1070,11 @@ export function createJobRequest(
     const idx = requests.findIndex((r) => r.id === existing.id)
     requests[idx] = updated
     writeRequests(requests)
+    if (typeof window !== 'undefined') {
+      import('./cloud-sync').then(({ syncToCloud }) => {
+        syncToCloud({ type: 'request', data: updated })
+      })
+    }
     const quota = getDailyRequestQuota(input.requesterPhone)
     return { ok: true, request: updated, remaining: quota.remaining }
   }
@@ -1078,6 +1098,11 @@ export function createJobRequest(
   }
   requests.unshift(request)
   writeRequests(requests)
+  if (typeof window !== 'undefined') {
+    import('./cloud-sync').then(({ syncToCloud }) => {
+      syncToCloud({ type: 'request', data: request })
+    })
+  }
   return {
     ok: true,
     request,
@@ -1238,9 +1263,12 @@ export type AdminStats = {
   requestsDeclined: number
 }
 
-export function getAdminJobSeekers(): AdminJobSeeker[] {
+export function buildAdminJobSeekers(
+  profiles: SkillProfile[],
+  accounts: StoredAccount[],
+): AdminJobSeeker[] {
   const map = new Map<string, AdminJobSeeker>()
-  for (const p of getProfiles()) {
+  for (const p of profiles) {
     const phone = normalizePhone(p.phone) || p.phone || p.id
     const listing: AdminSeekerListing = {
       id: p.id,
@@ -1304,8 +1332,7 @@ export function getAdminJobSeekers(): AdminJobSeeker[] {
     }
   }
 
-  ensureAccountFromSender()
-  for (const account of Object.values(getAccountsMap())) {
+  for (const account of accounts) {
     const key = normalizePhone(account.phone)
     if (!key || !account.roles.includes('seeker')) continue
     const row = map.get(key)
@@ -1340,9 +1367,16 @@ export function getAdminJobSeekers(): AdminJobSeeker[] {
   )
 }
 
-export function getAdminJobGivers(): AdminJobGiver[] {
+export function getAdminJobSeekers(): AdminJobSeeker[] {
+  return buildAdminJobSeekers(getProfiles(), getAllAccounts())
+}
+
+export function buildAdminJobGivers(
+  requests: JobRequest[],
+  accounts: StoredAccount[],
+): AdminJobGiver[] {
   const map = new Map<string, AdminJobGiver>()
-  for (const r of getRequests()) {
+  for (const r of requests) {
     const phone = normalizePhone(r.requesterPhone) || r.requesterPhone
     const profile = getProfileById(r.profileId)
     const detail: AdminGiverRequest = {
@@ -1410,8 +1444,7 @@ export function getAdminJobGivers(): AdminJobGiver[] {
     }
   }
 
-  ensureAccountFromSender()
-  for (const account of Object.values(getAccountsMap())) {
+  for (const account of accounts) {
     const key = normalizePhone(account.phone)
     if (!key || !account.roles.includes('giver')) continue
     const row = map.get(key)
@@ -1447,17 +1480,32 @@ export function getAdminJobGivers(): AdminJobGiver[] {
   )
 }
 
-export function getAdminStats(): AdminStats {
-  const requests = getRequests()
+export function getAdminJobGivers(): AdminJobGiver[] {
+  return buildAdminJobGivers(getRequests(), getAllAccounts())
+}
+
+export function buildAdminStats(
+  profiles: SkillProfile[],
+  requests: JobRequest[],
+  seekers: AdminJobSeeker[],
+  givers: AdminJobGiver[],
+): AdminStats {
   return {
-    jobSeekers: getAdminJobSeekers().length,
-    jobGivers: getAdminJobGivers().length,
-    listings: getProfiles().length,
+    jobSeekers: seekers.length,
+    jobGivers: givers.length,
+    listings: profiles.length,
     requestsTotal: requests.length,
     requestsPending: requests.filter((r) => r.status === 'pending').length,
     requestsAccepted: requests.filter((r) => r.status === 'accepted').length,
     requestsDeclined: requests.filter((r) => r.status === 'declined').length,
   }
+}
+
+export function getAdminStats(): AdminStats {
+  const requests = getRequests()
+  const seekers = getAdminJobSeekers()
+  const givers = getAdminJobGivers()
+  return buildAdminStats(getProfiles(), requests, seekers, givers)
 }
 
 /** Only this phone number can open the admin panel */

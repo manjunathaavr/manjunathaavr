@@ -1,12 +1,16 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Header } from '../components/Header'
 import { useSession } from '../hooks/useSession'
+import { fetchCloudAdminData, syncToCloud } from '../lib/cloud-sync'
 import { getSkillById } from '../data/skills'
 import {
   availabilityLabels,
+  buildAdminJobGivers,
+  buildAdminJobSeekers,
+  buildAdminStats,
   clearAllMarketplaceData,
   deleteJobGiverByPhone,
   deleteJobSeekerByPhone,
@@ -14,17 +18,18 @@ import {
   deleteRequest,
   formatRates,
   genderLabels,
-  getAdminJobGivers,
-  getAdminJobSeekers,
-  getAdminStats,
+  getAllAccounts,
   getProfileById,
+  getProfiles,
   getRequests,
   isSuperAdminSession,
+  normalizePhone,
   restoreSampleProfiles,
   type AdminJobGiver,
   type AdminJobSeeker,
   type JobRequest,
   type SkillProfile,
+  type StoredAccount,
   type UserRole,
 } from '../lib/storage'
 
@@ -60,6 +65,20 @@ function formatCoords(lat?: number, lng?: number) {
   return `${lat.toFixed(5)}, ${lng.toFixed(5)}`
 }
 
+function mergeByKey<T>(
+  local: T[],
+  remote: T[],
+  keyFn: (item: T) => string,
+): T[] {
+  const map = new Map<string, T>()
+  for (const item of remote) map.set(keyFn(item), item)
+  for (const item of local) {
+    const key = keyFn(item)
+    if (!map.has(key)) map.set(key, item)
+  }
+  return Array.from(map.values())
+}
+
 export function Admin() {
   const session = useSession()
   const isAdmin = isSuperAdminSession(session)
@@ -68,27 +87,81 @@ export function Admin() {
   const [search, setSearch] = useState('')
   const [openSeeker, setOpenSeeker] = useState<string | null>(null)
   const [openGiver, setOpenGiver] = useState<string | null>(null)
+  const [cloudConfigured, setCloudConfigured] = useState<boolean | null>(null)
+  const [cloudAccounts, setCloudAccounts] = useState<StoredAccount[]>([])
+  const [cloudProfiles, setCloudProfiles] = useState<SkillProfile[]>([])
+  const [cloudRequests, setCloudRequests] = useState<JobRequest[]>([])
 
   function refresh() {
     setTick((n) => n + 1)
   }
 
-  const stats = useMemo(() => {
+  useEffect(() => {
+    if (!session || !isAdmin) return
+    let cancelled = false
+    fetchCloudAdminData(session.phone).then((data) => {
+      if (cancelled || !data) {
+        if (!cancelled) setCloudConfigured(false)
+        return
+      }
+      setCloudConfigured(data.configured)
+      setCloudAccounts(data.accounts)
+      setCloudProfiles(data.profiles)
+      setCloudRequests(data.requests)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [session, isAdmin, tick])
+
+  useEffect(() => {
+    if (!isAdmin || !cloudConfigured) return
+    for (const account of getAllAccounts()) {
+      syncToCloud({ type: 'account', data: account })
+    }
+    for (const profile of getProfiles()) {
+      syncToCloud({ type: 'profile', data: profile })
+    }
+    for (const request of getRequests()) {
+      syncToCloud({ type: 'request', data: request })
+    }
+  }, [isAdmin, cloudConfigured, tick])
+
+  const mergedProfiles = useMemo(() => {
     void tick
-    return getAdminStats()
-  }, [tick])
-  const seekers = useMemo(() => {
+    return mergeByKey(getProfiles(), cloudProfiles, (p) => p.id)
+  }, [tick, cloudProfiles])
+
+  const mergedAccounts = useMemo(() => {
     void tick
-    return getAdminJobSeekers()
-  }, [tick])
-  const givers = useMemo(() => {
+    return mergeByKey(getAllAccounts(), cloudAccounts, (a) =>
+      normalizePhone(a.phone),
+    )
+  }, [tick, cloudAccounts])
+
+  const mergedRequests = useMemo(() => {
     void tick
-    return getAdminJobGivers()
-  }, [tick])
-  const requests = useMemo(() => {
-    void tick
-    return getRequests()
-  }, [tick])
+    return mergeByKey(getRequests(), cloudRequests, (r) => r.id)
+  }, [tick, cloudRequests])
+
+  const profileMap = useMemo(
+    () => new Map(mergedProfiles.map((p) => [p.id, p])),
+    [mergedProfiles],
+  )
+
+  const seekers = useMemo(
+    () => buildAdminJobSeekers(mergedProfiles, mergedAccounts),
+    [mergedProfiles, mergedAccounts],
+  )
+  const givers = useMemo(
+    () => buildAdminJobGivers(mergedRequests, mergedAccounts),
+    [mergedRequests, mergedAccounts],
+  )
+  const stats = useMemo(
+    () => buildAdminStats(mergedProfiles, mergedRequests, seekers, givers),
+    [mergedProfiles, mergedRequests, seekers, givers],
+  )
+  const requests = mergedRequests
 
   const filteredSeekers = useMemo(() => {
     return seekers.filter((s) =>
@@ -124,7 +197,7 @@ export function Admin() {
 
   const filteredRequests = useMemo(() => {
     return requests.filter((r) => {
-      const profile = getProfileById(r.profileId)
+      const profile = profileMap.get(r.profileId)
       return matchesQuery(
         [
           r.requesterName,
@@ -138,7 +211,7 @@ export function Admin() {
         search,
       )
     })
-  }, [requests, search])
+  }, [requests, search, profileMap])
 
   function confirmDelete(message: string) {
     return window.confirm(message)
@@ -180,6 +253,19 @@ export function Admin() {
     <div className="page admin-page">
       <Header />
       <section className="section section--top">
+        {cloudConfigured === false && (
+          <p className="hint admin-cloud-hint">
+            Cloud sync is not set up yet — admin only shows users from this
+            browser. Add Vercel KV in your Vercel project to see all registered
+            users from every device.
+          </p>
+        )}
+        {cloudConfigured === true && (
+          <p className="hint admin-cloud-hint">
+            Showing users from all devices (cloud sync active).
+          </p>
+        )}
+
         <div className="admin-tabs" role="tablist" aria-label="Admin sections">
           {(
             [
