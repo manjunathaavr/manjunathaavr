@@ -3,12 +3,22 @@ import { createClient, type RedisClientType } from 'redis'
 let client: RedisClientType | null = null
 let connecting: Promise<RedisClientType | null> | null = null
 
+/** Vercel Marketplace Redis may inject REDIS_URL or a custom prefix like STORAGE_URL. */
+function redisUrlFromEnv(): string | undefined {
+  return (
+    process.env.REDIS_URL ||
+    process.env.STORAGE_URL ||
+    process.env.UPSTASH_REDIS_REDIS_URL ||
+    process.env.KV_URL
+  )
+}
+
 export function redisUrlConfigured(): boolean {
-  return Boolean(process.env.REDIS_URL)
+  return Boolean(redisUrlFromEnv())
 }
 
 async function getRedis(): Promise<RedisClientType | null> {
-  const url = process.env.REDIS_URL
+  const url = redisUrlFromEnv()
   if (!url) return null
   if (client?.isOpen) return client
   if (!connecting) {
