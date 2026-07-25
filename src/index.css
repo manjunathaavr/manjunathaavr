@@ -235,6 +235,25 @@ p {
   text-underline-offset: 0.2em;
 }
 
+.site-nav a.nav-chip--myskills,
+.site-nav a.nav-chip--addskill {
+  background: rgba(13, 92, 74, 0.1);
+  border: 1px solid rgba(13, 92, 74, 0.22);
+  border-radius: 999px;
+  padding: 0.5rem 0.85rem;
+  min-height: 44px;
+  color: #0d5c4a;
+  text-decoration: none;
+}
+
+.site-nav a.nav-chip--myskills.nav-chip--on,
+.site-nav a.nav-chip--addskill.nav-chip--on {
+  background: #0d5c4a;
+  color: #fff;
+  border-color: #0d5c4a;
+  text-decoration: none;
+}
+
 .nav-link-badge {
   position: relative;
   display: inline-flex;

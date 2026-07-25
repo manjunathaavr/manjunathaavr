@@ -106,15 +106,27 @@ function HeaderNav() {
                 <Link href="/" className="nav-chip nav-chip--home">
                   Home
                 </Link>
+                <Link
+                  href="/account"
+                  className={guestNavClass(
+                    'nav-chip nav-chip--myskills',
+                    pathname === '/account',
+                  )}
+                >
+                  My skills
+                </Link>
+                <Link
+                  href="/offer"
+                  className={guestNavClass(
+                    'nav-chip nav-chip--addskill',
+                    pathname.startsWith('/offer'),
+                  )}
+                >
+                  Add skill
+                </Link>
                 <span className="role-pill" title="You are in I have a skill mode">
                   I have a skill
                 </span>
-                <Link href="/account" className={navLinkClass(pathname === '/account')}>
-                  My skills
-                </Link>
-                <Link href="/offer" className={navLinkClass(pathname.startsWith('/offer'))}>
-                  Add skill
-                </Link>
                 <Link
                   href="/requests"
                   className={`nav-link-badge${pathname === '/requests' ? ' active' : ''}`}
