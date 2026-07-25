@@ -189,6 +189,8 @@ p {
 .site-nav {
   display: flex;
   gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .site-nav a {
@@ -3723,6 +3725,30 @@ legend {
   .site-header {
     padding-left: 0.85rem;
     padding-right: 0.85rem;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .site-header__right {
+    width: 100%;
+    justify-content: flex-start;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.45rem;
+  }
+
+  .header-welcome {
+    font-size: 0.82rem;
+  }
+
+  .site-nav {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 0.3rem;
+  }
+
+  .site-nav .role-pill {
+    display: none;
   }
 
   .site-nav a {
