@@ -19,7 +19,6 @@ import {
   formatRates,
   genderLabels,
   getAllAccounts,
-  getProfileById,
   getProfiles,
   getRequests,
   isSuperAdminSession,
@@ -120,6 +119,7 @@ export function Admin() {
   const [search, setSearch] = useState('')
   const [openSeeker, setOpenSeeker] = useState<string | null>(null)
   const [openGiver, setOpenGiver] = useState<string | null>(null)
+  const [openRequest, setOpenRequest] = useState<string | null>(null)
   const [cloudConfigured, setCloudConfigured] = useState<boolean | null>(null)
   const [cloudAccounts, setCloudAccounts] = useState<StoredAccount[]>([])
   const [cloudProfiles, setCloudProfiles] = useState<SkillProfile[]>([])
@@ -542,19 +542,34 @@ export function Admin() {
             {filteredRequests.length === 0 ? (
               <p className="admin-empty">No requests match.</p>
             ) : (
-              <ul className="admin-request-list">
-                {filteredRequests.map((r) => (
-                  <RequestRow
-                    key={r.id}
-                    request={r}
-                    onDelete={() => {
-                      if (!confirmDelete('Delete this job request?')) return
-                      deleteRequest(r.id)
-                      refresh()
-                    }}
-                  />
-                ))}
-              </ul>
+              <div className="admin-data-card">
+                <div className="admin-data-head admin-data-head--requests">
+                  <span>Giver</span>
+                  <span>Phone</span>
+                  <span>Skill</span>
+                  <span>Seeker</span>
+                  <span>Status</span>
+                  <span aria-hidden="true" />
+                </div>
+                <ul className="admin-detail-list">
+                  {filteredRequests.map((r) => (
+                    <RequestDetailCard
+                      key={r.id}
+                      request={r}
+                      profile={profileMap.get(r.profileId)}
+                      open={openRequest === r.id}
+                      onToggle={() =>
+                        setOpenRequest((cur) => (cur === r.id ? null : r.id))
+                      }
+                      onDelete={() => {
+                        if (!confirmDelete('Delete this job request?')) return
+                        deleteRequest(r.id)
+                        refresh()
+                      }}
+                    />
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         )}
@@ -890,51 +905,99 @@ function GiverDetailCard({
   )
 }
 
-function RequestRow({
+function RequestDetailCard({
   request,
+  profile,
+  open,
+  onToggle,
   onDelete,
 }: {
   request: JobRequest
+  profile?: SkillProfile
+  open: boolean
+  onToggle: () => void
   onDelete: () => void
 }) {
   const skill = getSkillById(request.skillId)
-  const profile = getProfileById(request.profileId)
+  const seekerName = profile?.name || '—'
+
   return (
-    <li className="admin-request-row">
-      <div className="admin-request-row__main">
-        <div className="admin-request-row__top">
-          <strong>{request.requesterName}</strong>
-          <span className={`status-badge status-badge--${request.status}`}>
+    <li className={`admin-detail-card${open ? ' admin-detail-card--open' : ''}`}>
+      <button
+        type="button"
+        className="admin-data-row admin-data-row--requests"
+        onClick={onToggle}
+        aria-expanded={open}
+      >
+        <span className="admin-data-row__name">
+          <span className="admin-avatar admin-avatar--giver" aria-hidden="true">
+            {initials(request.requesterName)}
+          </span>
+          <span>
+            <strong>{request.requesterName}</strong>
+          </span>
+        </span>
+        <span className="admin-data-row__phone">
+          {formatPhone(request.requesterPhone)}
+        </span>
+        <span className="admin-data-row__skills">
+          <span className="admin-chip">{skill?.name || request.skillId}</span>
+        </span>
+        <span className="admin-data-row__location">{seekerName}</span>
+        <span className="admin-data-row__status">
+          <span className={`admin-status-pill admin-status-pill--${request.status}`}>
             {request.status}
           </span>
-        </div>
-        <p className="admin-request-row__line">
-          <span className="admin-request-row__label">Phone</span>
-          {formatPhone(request.requesterPhone)}
-        </p>
-        <p className="admin-request-row__line">
-          <span className="admin-request-row__label">Skill</span>
-          {skill?.name || request.skillId}
-          {profile ? ` · ${profile.name}` : ''}
-        </p>
-        {(request.requesterCity ||
-          request.requesterPinCode ||
-          request.requesterAddress) && (
-          <p className="admin-request-row__line">
-            <span className="admin-request-row__label">Location</span>
-            {[request.requesterCity, request.requesterPinCode, request.requesterAddress]
-              .filter(Boolean)
-              .join(' · ')}
-          </p>
-        )}
-        {request.note && (
-          <p className="admin-request-row__note">{request.note}</p>
-        )}
-        <p className="admin-request-row__when">{formatWhen(request.createdAt)}</p>
-      </div>
-      <button type="button" className="btn btn--danger btn--tiny" onClick={onDelete}>
-        Delete
+        </span>
+        <span className="admin-data-row__chevron" aria-hidden="true">
+          {open ? '▾' : '▸'}
+        </span>
       </button>
+
+      {open && (
+        <div className="admin-detail-card__body">
+          <dl className="admin-detail-grid">
+            <DetailField label="Giver" value={request.requesterName} />
+            <DetailField label="Phone" value={formatPhone(request.requesterPhone)} />
+            <DetailField label="Skill" value={skill?.name || request.skillId} />
+            <DetailField label="Seeker" value={seekerName} />
+            <DetailField
+              label="Seeker phone"
+              value={profile?.phone ? formatPhone(profile.phone) : '—'}
+            />
+            <DetailField
+              label="Hire type"
+              value={
+                request.hireType
+                  ? availabilityLabels[request.hireType] || request.hireType
+                  : '—'
+              }
+            />
+            <DetailField label="Status" value={request.status} />
+            <DetailField
+              label="Location"
+              value={
+                [request.requesterCity, request.requesterPinCode, request.requesterAddress]
+                  .filter(Boolean)
+                  .join(' · ') || '—'
+              }
+            />
+            {formatCoords(request.requesterLatitude, request.requesterLongitude) && (
+              <DetailField
+                label="GPS"
+                value={formatCoords(request.requesterLatitude, request.requesterLongitude)}
+              />
+            )}
+            <DetailField label="Note" value={request.note || '—'} />
+            <DetailField label="Sent" value={formatWhen(request.createdAt)} />
+          </dl>
+          <div className="admin-row-actions">
+            <button type="button" className="btn btn--danger btn--tiny" onClick={onDelete}>
+              Delete request
+            </button>
+          </div>
+        </div>
+      )}
     </li>
   )
 }
