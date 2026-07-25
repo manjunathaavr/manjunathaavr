@@ -122,15 +122,17 @@ p {
 }
 
 .header-welcome {
-  font-size: 0.88rem;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
   font-weight: 600;
-  color: #2b6cb0;
+  color: #5c6b65;
   white-space: nowrap;
+  letter-spacing: -0.01em;
 }
 
 .header-welcome strong {
   font-weight: 800;
-  color: #2b6cb0;
+  color: #0d5c4a;
 }
 
 .brand-mark {
@@ -195,21 +197,31 @@ p {
 
 .site-nav a {
   text-decoration: none;
-  color: #2b6cb0;
-  font-weight: 600;
-  font-size: 0.95rem;
-  padding: 0.6rem 0.95rem;
-  min-height: 44px;
+  font-family: var(--font-display);
+  color: #0d5c4a;
+  font-weight: 700;
+  font-size: 0.88rem;
+  letter-spacing: -0.01em;
+  padding: 0.5rem 0.8rem;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  transition: background 0.2s ease, color 0.2s ease;
+  border: 1px solid transparent;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
-.site-nav a:hover,
+.site-nav a:hover {
+  background: rgba(13, 92, 74, 0.08);
+  color: #0a4a3c;
+  border-color: rgba(13, 92, 74, 0.14);
+}
+
 .site-nav a.active {
-  background: rgba(74, 159, 232, 0.12);
-  color: #2b6cb0;
+  background: rgba(13, 92, 74, 0.12);
+  color: #0d5c4a;
+  border-color: rgba(13, 92, 74, 0.22);
+  font-weight: 800;
 }
 
 /* Guest header links — text only */
@@ -221,7 +233,7 @@ p {
   box-shadow: none;
   padding: 0.35rem 0.55rem;
   min-height: auto;
-  color: #2b6cb0;
+  color: #0d5c4a;
 }
 
 .site-nav a.nav-chip:hover,
@@ -230,9 +242,11 @@ p {
 .site-nav a.nav-chip.active.nav-chip--on {
   background: none;
   box-shadow: none;
-  color: #2b6cb0;
+  color: #e07828;
+  border-color: transparent;
   text-decoration: underline;
   text-underline-offset: 0.2em;
+  text-decoration-color: rgba(224, 120, 40, 0.65);
 }
 
 .site-nav a.nav-chip--myskills,
@@ -240,9 +254,17 @@ p {
   background: rgba(13, 92, 74, 0.1);
   border: 1px solid rgba(13, 92, 74, 0.22);
   border-radius: 999px;
-  padding: 0.5rem 0.85rem;
-  min-height: 44px;
+  padding: 0.45rem 0.8rem;
+  min-height: 40px;
   color: #0d5c4a;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.site-nav a.nav-chip--myskills:hover,
+.site-nav a.nav-chip--addskill:hover {
+  background: rgba(13, 92, 74, 0.16);
+  color: #0a4a3c;
   text-decoration: none;
 }
 
@@ -252,6 +274,21 @@ p {
   color: #fff;
   border-color: #0d5c4a;
   text-decoration: none;
+}
+
+.site-nav a.nav-chip--home {
+  border-radius: 999px;
+  padding: 0.5rem 0.8rem;
+  min-height: 40px;
+  text-decoration: none;
+}
+
+.site-nav a.nav-chip--home:hover,
+.site-nav a.nav-chip--home.nav-chip--on {
+  background: rgba(13, 92, 74, 0.08);
+  color: #0a4a3c;
+  text-decoration: none;
+  border-color: rgba(13, 92, 74, 0.14);
 }
 
 .nav-link-badge {
@@ -278,7 +315,7 @@ p {
 }
 
 .site-nav a.active .nav-badge {
-  box-shadow: 0 0 0 2px var(--forest);
+  box-shadow: 0 0 0 2px #0d5c4a;
 }
 
 .app-toast {
@@ -3205,34 +3242,42 @@ p {
   align-items: center;
   padding: 0.35rem 0.7rem;
   border-radius: 999px;
-  background: rgba(74, 159, 232, 0.12);
-  color: #2b6cb0;
-  font-size: 0.78rem;
+  background: rgba(13, 92, 74, 0.1);
+  color: #0d5c4a;
+  font-family: var(--font-display);
+  font-size: 0.76rem;
   font-weight: 800;
-  letter-spacing: 0.01em;
-  border: 1px solid rgba(74, 159, 232, 0.35);
+  letter-spacing: -0.01em;
+  border: 1px solid rgba(13, 92, 74, 0.22);
   text-transform: none;
 }
 
 .role-pill--giver {
-  background: rgba(74, 159, 232, 0.12);
-  color: #2b6cb0;
-  border-color: rgba(74, 159, 232, 0.35);
+  background: rgba(224, 120, 40, 0.12);
+  color: #c46820;
+  border-color: rgba(224, 120, 40, 0.35);
 }
 
 .nav-text-btn {
   border: none;
   background: transparent;
-  color: #2b6cb0;
-  font: inherit;
+  color: #0d5c4a;
+  font-family: var(--font-display);
   font-weight: 700;
-  font-size: 0.88rem;
-  padding: 0.55rem 0.7rem;
-  min-height: 44px;
+  font-size: 0.84rem;
+  letter-spacing: -0.01em;
+  padding: 0.5rem 0.65rem;
+  min-height: 40px;
   cursor: pointer;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.2s ease;
+}
+
+.nav-text-btn:hover {
+  color: #e07828;
   text-decoration: underline;
   text-underline-offset: 0.15em;
-  -webkit-tap-highlight-color: transparent;
 }
 
 .role-switch-card {
