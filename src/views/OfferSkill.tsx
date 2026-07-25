@@ -53,6 +53,7 @@ export function OfferSkill() {
   const [pinLooking, setPinLooking] = useState(false)
   const [locationTouched, setLocationTouched] = useState(false)
   const [profileTick, setProfileTick] = useState(0)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     const onRefresh = () => setProfileTick((n) => n + 1)
@@ -265,7 +266,9 @@ export function OfferSkill() {
       }
     }
 
-    saveProfile({
+    setSaving(true)
+    try {
+      await saveProfile({
       skillId: skill!.id,
       name: name.trim(),
       gender: resolvedGender,
@@ -283,9 +286,12 @@ export function OfferSkill() {
         (e.currentTarget.elements.namedItem('about') as HTMLTextAreaElement)
           ?.value || '',
       ).trim(),
-    })
+      })
 
-    setSaved(true)
+      setSaved(true)
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (saved) {
@@ -534,8 +540,12 @@ export function OfferSkill() {
             />
           </label>
 
-          <button type="submit" className="btn btn--primary btn--block offer-form__submit">
-            {session ? 'Save this skill' : 'Save my profile'}
+          <button
+            type="submit"
+            className="btn btn--primary btn--block offer-form__submit"
+            disabled={saving}
+          >
+            {saving ? 'Saving…' : session ? 'Save this skill' : 'Save my profile'}
           </button>
           <Link href="/offer" className="back-link">
             ← Choose another skill

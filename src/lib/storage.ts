@@ -295,9 +295,9 @@ export function getProfiles(): SkillProfile[] {
   }
 }
 
-export function saveProfile(
+export async function saveProfile(
   profile: Omit<SkillProfile, 'id' | 'createdAt'>,
-): SkillProfile {
+): Promise<SkillProfile> {
   const session = getSession()
   const ownerPhone = normalizePhone(
     (session?.phone || profile.phone).trim(),
@@ -317,9 +317,8 @@ export function saveProfile(
   enterAsRole({ name: newProfile.name, phone: newProfile.phone }, 'seeker')
   emitProfilesChanged()
   if (typeof window !== 'undefined') {
-    import('./cloud-sync').then(({ syncToCloud }) => {
-      syncToCloud({ type: 'profile', data: newProfile })
-    })
+    const { syncToCloudAwait } = await import('./cloud-sync')
+    await syncToCloudAwait({ type: 'profile', data: newProfile })
   }
   return newProfile
 }
@@ -1053,19 +1052,18 @@ export async function registerWithPhoneAsync(input: {
       message: 'An account already exists for this number. Please log in.',
     }
   }
-  const { fetchCloudUserData, syncAccountToCloudAwait } = await import(
+  const { fetchCloudUserData, syncMyDataToCloudAwait } = await import(
     './cloud-sync'
   )
   const cloud = await fetchCloudUserData(input.phone)
   if (cloud?.account) {
     hydrateCloudUserData(cloud)
-    return loginWithPhone(input.phone, input.role)
+    const result = loginWithPhone(input.phone, input.role)
+    if (result.ok) await syncMyDataToCloudAwait()
+    return result
   }
   const result = registerWithPhone(input)
-  if (result.ok) {
-    const account = getAccountByPhone(key)
-    if (account) await syncAccountToCloudAwait(account)
-  }
+  if (result.ok) await syncMyDataToCloudAwait()
   return result
 }
 
@@ -1079,7 +1077,7 @@ export async function loginWithPhoneAsync(
     return { ok: false, message: 'Enter a valid 10-digit mobile number.' }
   }
 
-  const { fetchCloudUserData, syncAccountToCloudAwait } = await import(
+  const { fetchCloudUserData, syncMyDataToCloudAwait } = await import(
     './cloud-sync'
   )
   const cloud = await fetchCloudUserData(phone)
@@ -1092,8 +1090,7 @@ export async function loginWithPhoneAsync(
 
   const result = loginWithPhone(phone, preferredRole)
   if (result.ok) {
-    const account = getAccountByPhone(key)
-    if (account) await syncAccountToCloudAwait(account)
+    await syncMyDataToCloudAwait()
     return result
   }
 

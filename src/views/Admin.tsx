@@ -99,18 +99,25 @@ export function Admin() {
   useEffect(() => {
     if (!session || !isAdmin) return
     let cancelled = false
-    fetchCloudAdminData(session.phone).then((data) => {
-      if (cancelled || !data) {
-        if (!cancelled) setCloudConfigured(false)
+
+    async function loadCloud() {
+      const data = await fetchCloudAdminData(session!.phone)
+      if (cancelled) return
+      if (!data) {
+        setCloudConfigured(false)
         return
       }
       setCloudConfigured(data.configured)
       setCloudAccounts(data.accounts)
       setCloudProfiles(data.profiles)
       setCloudRequests(data.requests)
-    })
+    }
+
+    void loadCloud()
+    const timer = window.setInterval(loadCloud, 20000)
     return () => {
       cancelled = true
+      window.clearInterval(timer)
     }
   }, [session, isAdmin, tick])
 

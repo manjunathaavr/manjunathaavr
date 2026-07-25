@@ -18,22 +18,27 @@ export function syncToCloud(payload: SyncPayload) {
   })
 }
 
-/** Wait until account is saved to cloud (used on sign-up / login). */
-export async function syncAccountToCloudAwait(
-  account: StoredAccount,
-): Promise<boolean> {
+/** Wait until one record is saved to cloud. */
+export async function syncToCloudAwait(payload: SyncPayload): Promise<boolean> {
   if (typeof window === 'undefined') return false
   try {
     const res = await fetch('/api/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'account', data: account }),
+      body: JSON.stringify(payload),
     })
     const data = (await res.json()) as { ok?: boolean; reason?: string }
     return res.ok && data.ok !== false
   } catch {
     return false
   }
+}
+
+/** Wait until account is saved to cloud (used on sign-up / login). */
+export async function syncAccountToCloudAwait(
+  account: StoredAccount,
+): Promise<boolean> {
+  return syncToCloudAwait({ type: 'account', data: account })
 }
 
 export type CloudAdminData = {
@@ -82,37 +87,44 @@ export async function fetchCloudAdminData(
 /** Push this browser's account, skill listings, and requests to the cloud. */
 export function syncMyDataToCloud() {
   if (typeof window === 'undefined') return
-  import('./storage').then(
-    ({
-      getAccountByPhone,
-      getMyProfiles,
-      getRequests,
-      getSession,
-      normalizePhone,
-    }) => {
-      const session = getSession()
-      if (!session) return
+  void syncMyDataToCloudAwait()
+}
 
-      const accounts: StoredAccount[] = []
-      const account = getAccountByPhone(session.phone)
-      if (account) accounts.push(account)
+/** Wait until the logged-in user's data is saved to cloud. */
+export async function syncMyDataToCloudAwait(): Promise<boolean> {
+  if (typeof window === 'undefined') return false
+  const {
+    getAccountByPhone,
+    getMyProfiles,
+    getRequests,
+    getSession,
+    normalizePhone,
+  } = await import('./storage')
 
-      const profiles = getMyProfiles()
-      const phone = normalizePhone(session.phone)
-      const requests = getRequests().filter(
-        (r) => normalizePhone(r.requesterPhone) === phone,
-      )
+  const session = getSession()
+  if (!session) return false
 
-      if (!accounts.length && !profiles.length && !requests.length) return
+  const accounts: StoredAccount[] = []
+  const account = getAccountByPhone(session.phone)
+  if (account) accounts.push(account)
 
-      fetch('/api/sync/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accounts, profiles, requests }),
-        keepalive: true,
-      }).catch(() => {
-        /* offline or cloud not configured */
-      })
-    },
+  const profiles = getMyProfiles()
+  const phone = normalizePhone(session.phone)
+  const requests = getRequests().filter(
+    (r) => normalizePhone(r.requesterPhone) === phone,
   )
+
+  if (!accounts.length && !profiles.length && !requests.length) return true
+
+  try {
+    const res = await fetch('/api/sync/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accounts, profiles, requests }),
+    })
+    const data = (await res.json()) as { ok?: boolean; reason?: string }
+    return res.ok && data.ok !== false
+  } catch {
+    return false
+  }
 }
