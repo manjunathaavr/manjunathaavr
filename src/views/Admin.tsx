@@ -60,9 +60,42 @@ function roleLabels(roles: UserRole[]) {
     .join(', ')
 }
 
+function formatPhone(phone: string) {
+  const digits = phone.replace(/\D/g, '').slice(-10)
+  if (digits.length !== 10) return phone
+  return `${digits.slice(0, 5)} ${digits.slice(5)}`
+}
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('')
+}
+
 function formatCoords(lat?: number, lng?: number) {
   if (lat == null || lng == null) return ''
   return `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+}
+
+function SkillChips({ skillIds }: { skillIds: string[] }) {
+  if (skillIds.length === 0) {
+    return <span className="admin-chip admin-chip--muted">No skills yet</span>
+  }
+  return (
+    <div className="admin-chips">
+      {skillIds.slice(0, 3).map((id) => (
+        <span key={id} className="admin-chip">
+          {getSkillById(id)?.name || id}
+        </span>
+      ))}
+      {skillIds.length > 3 && (
+        <span className="admin-chip admin-chip--more">+{skillIds.length - 3}</span>
+      )}
+    </div>
+  )
 }
 
 function mergeByKey<T>(
@@ -259,17 +292,24 @@ export function Admin() {
   return (
     <div className="page admin-page">
       <Header />
-      <section className="section section--top">
+      <section className="section section--top admin-section">
+        <div className="admin-topbar">
+          <div>
+            <p className="admin-eyebrow">Swayam Nirman</p>
+            <h1 className="admin-title">Admin dashboard</h1>
+          </div>
+          {cloudConfigured === true && (
+            <span className="admin-sync admin-sync--on">Cloud sync active</span>
+          )}
+          {cloudConfigured === false && (
+            <span className="admin-sync admin-sync--off">Local browser only</span>
+          )}
+        </div>
+
         {cloudConfigured === false && (
-          <p className="hint admin-cloud-hint">
-            Cloud sync is not set up yet — admin only shows users from this
-            browser. In Vercel go to Marketplace → Upstash → Redis, connect it
-            to this project, then redeploy.
-          </p>
-        )}
-        {cloudConfigured === true && (
-          <p className="hint admin-cloud-hint">
-            Showing users from all devices (cloud sync active).
+          <p className="admin-notice admin-notice--warn">
+            Cloud sync is not set up — admin only shows users from this browser.
+            Connect Redis in Vercel Marketplace, then redeploy.
           </p>
         )}
 
@@ -300,15 +340,31 @@ export function Admin() {
 
         {tab !== 'overview' && (
           <label className="admin-search">
+            <svg
+              className="admin-search__icon"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="2" />
+              <path
+                d="M16.5 16.5L21 21"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
             <span className="sr-only">Search users</span>
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={
                 tab === 'seekers'
-                  ? 'Search seekers by name, phone, skill, city…'
+                  ? 'Search by name, phone, skill, city…'
                   : tab === 'givers'
-                    ? 'Search givers by name, phone, skill…'
+                    ? 'Search by name, phone, skill…'
                     : 'Search requests…'
               }
             />
@@ -373,90 +429,118 @@ export function Admin() {
 
         {tab === 'seekers' && (
           <div className="admin-panel">
-            <h2>Job seekers — full details ({filteredSeekers.length})</h2>
+            <div className="admin-panel__head">
+              <h2>Job seekers</h2>
+              <span className="admin-count">{filteredSeekers.length} users</span>
+            </div>
             {filteredSeekers.length === 0 ? (
-              <p className="hint">No job seekers match this search.</p>
+              <p className="admin-empty">No job seekers match this search.</p>
             ) : (
-              <ul className="admin-detail-list">
-                {filteredSeekers.map((s) => (
-                  <SeekerDetailCard
-                    key={s.phone}
-                    seeker={s}
-                    open={openSeeker === s.phone}
-                    onToggle={() =>
-                      setOpenSeeker((cur) => (cur === s.phone ? null : s.phone))
-                    }
-                    onDelete={() => {
-                      if (
-                        !confirmDelete(
-                          `Delete job seeker ${s.name} and all their skill listings?`,
-                        )
-                      ) {
-                        return
+              <div className="admin-data-card">
+                <div className="admin-data-head admin-data-head--seekers">
+                  <span>Name</span>
+                  <span>Phone</span>
+                  <span>Skills</span>
+                  <span>Listings</span>
+                  <span>Location</span>
+                  <span aria-hidden="true" />
+                </div>
+                <ul className="admin-detail-list">
+                  {filteredSeekers.map((s) => (
+                    <SeekerDetailCard
+                      key={s.phone}
+                      seeker={s}
+                      open={openSeeker === s.phone}
+                      onToggle={() =>
+                        setOpenSeeker((cur) => (cur === s.phone ? null : s.phone))
                       }
-                      deleteJobSeekerByPhone(s.phone)
-                      refresh()
-                    }}
-                    onDeleteListing={(id, label) => {
-                      if (!confirmDelete(`Delete listing: ${label}?`)) return
-                      deleteProfile(id)
-                      refresh()
-                    }}
-                  />
-                ))}
-              </ul>
+                      onDelete={() => {
+                        if (
+                          !confirmDelete(
+                            `Delete job seeker ${s.name} and all their skill listings?`,
+                          )
+                        ) {
+                          return
+                        }
+                        deleteJobSeekerByPhone(s.phone)
+                        refresh()
+                      }}
+                      onDeleteListing={(id, label) => {
+                        if (!confirmDelete(`Delete listing: ${label}?`)) return
+                        deleteProfile(id)
+                        refresh()
+                      }}
+                    />
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         )}
 
         {tab === 'givers' && (
           <div className="admin-panel">
-            <h2>Job givers — full details ({filteredGivers.length})</h2>
+            <div className="admin-panel__head">
+              <h2>Job givers</h2>
+              <span className="admin-count">{filteredGivers.length} users</span>
+            </div>
             {filteredGivers.length === 0 ? (
-              <p className="hint">
-                No job givers match. They appear when someone sends a help
-                request.
+              <p className="admin-empty">
+                No job givers yet. They appear when someone sends a help request.
               </p>
             ) : (
-              <ul className="admin-detail-list">
-                {filteredGivers.map((g) => (
-                  <GiverDetailCard
-                    key={g.phone}
-                    giver={g}
-                    open={openGiver === g.phone}
-                    onToggle={() =>
-                      setOpenGiver((cur) => (cur === g.phone ? null : g.phone))
-                    }
-                    onDelete={() => {
-                      if (
-                        !confirmDelete(
-                          `Delete all requests from job giver ${g.name}?`,
-                        )
-                      ) {
-                        return
+              <div className="admin-data-card">
+                <div className="admin-data-head admin-data-head--givers">
+                  <span>Name</span>
+                  <span>Phone</span>
+                  <span>Skills requested</span>
+                  <span>Requests</span>
+                  <span>Status</span>
+                  <span aria-hidden="true" />
+                </div>
+                <ul className="admin-detail-list">
+                  {filteredGivers.map((g) => (
+                    <GiverDetailCard
+                      key={g.phone}
+                      giver={g}
+                      open={openGiver === g.phone}
+                      onToggle={() =>
+                        setOpenGiver((cur) => (cur === g.phone ? null : g.phone))
                       }
-                      deleteJobGiverByPhone(g.phone)
-                      refresh()
-                    }}
-                    onDeleteRequest={(id) => {
-                      if (!confirmDelete('Delete this job request?')) return
-                      deleteRequest(id)
-                      refresh()
-                    }}
-                  />
-                ))}
-              </ul>
+                      onDelete={() => {
+                        if (
+                          !confirmDelete(
+                            `Delete all requests from job giver ${g.name}?`,
+                          )
+                        ) {
+                          return
+                        }
+                        deleteJobGiverByPhone(g.phone)
+                        refresh()
+                      }}
+                      onDeleteRequest={(id) => {
+                        if (!confirmDelete('Delete this job request?')) return
+                        deleteRequest(id)
+                        refresh()
+                      }}
+                    />
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         )}
 
         {tab === 'requests' && (
           <div className="admin-panel">
-            <h2>All job requests ({filteredRequests.length})</h2>
+            <div className="admin-panel__head">
+              <h2>All requests</h2>
+              <span className="admin-count">{filteredRequests.length} total</span>
+            </div>
             {filteredRequests.length === 0 ? (
-              <p className="hint">No requests match.</p>
+              <p className="admin-empty">No requests match.</p>
             ) : (
-              <ul className="profile-list">
+              <ul className="admin-request-list">
                 {filteredRequests.map((r) => (
                   <RequestRow
                     key={r.id}
@@ -525,18 +609,36 @@ function SeekerDetailCard({
   const skillNames = seeker.skills
     .map((id) => getSkillById(id)?.name || id)
     .join(', ')
+  const location = seeker.cities[0] || seeker.pinCodes[0] || '—'
 
   return (
     <li className={`admin-detail-card${open ? ' admin-detail-card--open' : ''}`}>
-      <button type="button" className="admin-detail-card__head" onClick={onToggle}>
-        <div>
-          <strong>{seeker.name}</strong>
-          <p className="admin-detail-card__meta">
-            {seeker.phone} · {seeker.listingCount} listing
-            {seeker.listingCount === 1 ? '' : 's'} · {skillNames || 'No skills'}
-          </p>
-        </div>
-        <span className="admin-detail-card__chevron" aria-hidden="true">
+      <button
+        type="button"
+        className="admin-data-row admin-data-row--seekers"
+        onClick={onToggle}
+        aria-expanded={open}
+      >
+        <span className="admin-data-row__name">
+          <span className="admin-avatar" aria-hidden="true">
+            {initials(seeker.name)}
+          </span>
+          <span>
+            <strong>{seeker.name}</strong>
+            {seeker.gender && (
+              <small>{genderLabels[seeker.gender]}</small>
+            )}
+          </span>
+        </span>
+        <span className="admin-data-row__phone">{formatPhone(seeker.phone)}</span>
+        <span className="admin-data-row__skills">
+          <SkillChips skillIds={seeker.skills} />
+        </span>
+        <span className="admin-data-row__count">
+          <span className="admin-num">{seeker.listingCount}</span>
+        </span>
+        <span className="admin-data-row__location">{location}</span>
+        <span className="admin-data-row__chevron" aria-hidden="true">
           {open ? '▾' : '▸'}
         </span>
       </button>
@@ -658,15 +760,34 @@ function GiverDetailCard({
 
   return (
     <li className={`admin-detail-card${open ? ' admin-detail-card--open' : ''}`}>
-      <button type="button" className="admin-detail-card__head" onClick={onToggle}>
-        <div>
-          <strong>{giver.name}</strong>
-          <p className="admin-detail-card__meta">
-            {giver.phone} · {giver.requestCount} request
-            {giver.requestCount === 1 ? '' : 's'} · {giver.pending} pending
-          </p>
-        </div>
-        <span className="admin-detail-card__chevron" aria-hidden="true">
+      <button
+        type="button"
+        className="admin-data-row admin-data-row--givers"
+        onClick={onToggle}
+        aria-expanded={open}
+      >
+        <span className="admin-data-row__name">
+          <span className="admin-avatar admin-avatar--giver" aria-hidden="true">
+            {initials(giver.name)}
+          </span>
+          <span>
+            <strong>{giver.name}</strong>
+            {giver.gender && <small>{genderLabels[giver.gender]}</small>}
+          </span>
+        </span>
+        <span className="admin-data-row__phone">{formatPhone(giver.phone)}</span>
+        <span className="admin-data-row__skills">
+          <SkillChips skillIds={giver.skillsRequested} />
+        </span>
+        <span className="admin-data-row__count">
+          <span className="admin-num">{giver.requestCount}</span>
+        </span>
+        <span className="admin-data-row__status">
+          <span className="admin-status-pill admin-status-pill--pending">
+            {giver.pending} pending
+          </span>
+        </span>
+        <span className="admin-data-row__chevron" aria-hidden="true">
           {open ? '▾' : '▸'}
         </span>
       </button>
@@ -777,45 +898,41 @@ function RequestRow({
   const skill = getSkillById(request.skillId)
   const profile = getProfileById(request.profileId)
   return (
-    <li className="profile-card">
-      <div className="profile-card__top">
-        <strong>{request.requesterName}</strong>
-        <span className={`status-badge status-badge--${request.status}`}>
-          {request.status}
-        </span>
+    <li className="admin-request-row">
+      <div className="admin-request-row__main">
+        <div className="admin-request-row__top">
+          <strong>{request.requesterName}</strong>
+          <span className={`status-badge status-badge--${request.status}`}>
+            {request.status}
+          </span>
+        </div>
+        <p className="admin-request-row__line">
+          <span className="admin-request-row__label">Phone</span>
+          {formatPhone(request.requesterPhone)}
+        </p>
+        <p className="admin-request-row__line">
+          <span className="admin-request-row__label">Skill</span>
+          {skill?.name || request.skillId}
+          {profile ? ` · ${profile.name}` : ''}
+        </p>
+        {(request.requesterCity ||
+          request.requesterPinCode ||
+          request.requesterAddress) && (
+          <p className="admin-request-row__line">
+            <span className="admin-request-row__label">Location</span>
+            {[request.requesterCity, request.requesterPinCode, request.requesterAddress]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
+        )}
+        {request.note && (
+          <p className="admin-request-row__note">{request.note}</p>
+        )}
+        <p className="admin-request-row__when">{formatWhen(request.createdAt)}</p>
       </div>
-      <p className="profile-card__meta">Job giver: {request.requesterPhone}</p>
-      <p className="profile-card__meta">
-        Wants <strong>{skill?.name || request.skillId}</strong>
-        {profile ? ` from ${profile.name} (${profile.phone})` : ''}
-        {request.hireType
-          ? ` · ${availabilityLabels[request.hireType]}`
-          : ''}
-      </p>
-      {request.note && <p>{request.note}</p>}
-      {(request.requesterCity ||
-        request.requesterPinCode ||
-        request.requesterAddress) && (
-        <p className="profile-card__meta">
-          Location:{' '}
-          {[request.requesterCity, request.requesterPinCode, request.requesterAddress]
-            .filter(Boolean)
-            .join(' · ')}
-        </p>
-      )}
-      {formatCoords(request.requesterLatitude, request.requesterLongitude) && (
-        <p className="profile-card__meta">
-          GPS: {formatCoords(request.requesterLatitude, request.requesterLongitude)}
-        </p>
-      )}
-      <div className="admin-row-actions">
-        <p className="hint" style={{ margin: 0 }}>
-          {formatWhen(request.createdAt)}
-        </p>
-        <button type="button" className="btn btn--danger btn--tiny" onClick={onDelete}>
-          Delete
-        </button>
-      </div>
+      <button type="button" className="btn btn--danger btn--tiny" onClick={onDelete}>
+        Delete
+      </button>
     </li>
   )
 }
