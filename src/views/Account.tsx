@@ -13,8 +13,8 @@ import {
   availabilityLabels,
   formatRates,
   getMyProfiles,
-  loginWithPhone,
-  registerWithPhone,
+  loginWithPhoneAsync,
+  registerWithPhoneAsync,
   type Gender,
   type UserRole,
 } from '../lib/storage'
@@ -40,6 +40,7 @@ export function Account() {
   const [name, setName] = useState('')
   const [gender, setGender] = useState<Gender | ''>('')
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
   const myProfiles = session ? getMyProfiles() : []
 
   useEffect(() => {
@@ -75,7 +76,7 @@ export function Account() {
     replaceParams(nextParams)
   }
 
-  function onLogin(e: FormEvent) {
+  async function onLogin(e: FormEvent) {
     e.preventDefault()
     setError('')
     if (!role) {
@@ -86,16 +87,21 @@ export function Account() {
       setError('Enter a valid 10-digit mobile number.')
       return
     }
-    const result = loginWithPhone(phone, role)
-    if (!result.ok) {
-      setError(result.message)
-      return
+    setBusy(true)
+    try {
+      const result = await loginWithPhoneAsync(phone, role)
+      if (!result.ok) {
+        setError(result.message)
+        return
+      }
+      setPhone('')
+      router.push(role === 'seeker' ? '/offer' : '/find')
+    } finally {
+      setBusy(false)
     }
-    setPhone('')
-    router.push(role === 'seeker' ? '/offer' : '/find')
   }
 
-  function onSignup(e: FormEvent) {
+  async function onSignup(e: FormEvent) {
     e.preventDefault()
     setError('')
     if (!role) {
@@ -107,17 +113,22 @@ export function Account() {
       setError('Please select Male or Female.')
       return
     }
-    const result = registerWithPhone({
-      name,
-      phone,
-      gender,
-      role,
-    })
-    if (!result.ok) {
-      setError(result.message)
-      return
+    setBusy(true)
+    try {
+      const result = await registerWithPhoneAsync({
+        name,
+        phone,
+        gender,
+        role,
+      })
+      if (!result.ok) {
+        setError(result.message)
+        return
+      }
+      router.push(role === 'seeker' ? '/offer' : '/find')
+    } finally {
+      setBusy(false)
     }
-    router.push(role === 'seeker' ? '/offer' : '/find')
   }
 
   function chooseRole(next: UserRole) {
@@ -294,6 +305,7 @@ export function Account() {
                 <button
                   type="submit"
                   className={`auth-continue${!role ? ' auth-continue--muted' : ''}`}
+                  disabled={busy}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path
@@ -307,7 +319,7 @@ export function Account() {
                       strokeLinecap="round"
                     />
                   </svg>
-                  <span>Continue to Login</span>
+                  <span>{busy ? 'Logging in…' : 'Continue to Login'}</span>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path
                       d="M5 12h14M13 6l6 6-6 6"
@@ -425,8 +437,8 @@ export function Account() {
                 {error && (
                   <p className="request-status request-status--declined">{error}</p>
                 )}
-                <button type="submit" className="auth-form__submit">
-                  SIGN UP
+                <button type="submit" className="auth-form__submit" disabled={busy}>
+                  {busy ? 'Creating account…' : 'SIGN UP'}
                 </button>
                 <p className="auth-form__foot">
                   Already have account?{' '}

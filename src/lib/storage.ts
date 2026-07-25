@@ -323,6 +323,59 @@ function writeProfiles(profiles: SkillProfile[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(profiles))
 }
 
+/** Merge cloud account, profiles, and requests into this browser. */
+export function hydrateCloudUserData(data: {
+  account?: StoredAccount | null
+  profiles?: SkillProfile[]
+  requests?: JobRequest[]
+}) {
+  if (data.account) {
+    upsertAccount({
+      name: data.account.name,
+      phone: data.account.phone,
+      gender: data.account.gender,
+      roles: data.account.roles,
+    })
+    if (data.account.gender) {
+      saveSenderIdentity({
+        name: data.account.name,
+        phone: data.account.phone,
+        gender: data.account.gender,
+      })
+    }
+  }
+
+  if (data.profiles?.length) {
+    const map = new Map(getProfiles().map((p) => [p.id, p]))
+    for (const profile of data.profiles) {
+      map.set(profile.id, profile)
+      rememberOwnedProfile(profile.id)
+    }
+    writeProfiles(Array.from(map.values()))
+  }
+
+  if (data.requests?.length) {
+    const map = new Map(getRequests().map((r) => [r.id, r]))
+    for (const request of data.requests) {
+      map.set(request.id, request)
+    }
+    writeRequests(Array.from(map.values()))
+  }
+}
+
+function hasLocalUserData(phone: string): boolean {
+  const key = normalizePhone(phone)
+  if (getAccountByPhone(key)) return true
+  if (getProfilesByPhone(key).length > 0) return true
+  if (
+    getRequests().some((r) => normalizePhone(r.requesterPhone) === key)
+  ) {
+    return true
+  }
+  const sender = getSenderIdentity()
+  return Boolean(sender && normalizePhone(sender.phone) === key)
+}
+
 export function deleteProfile(id: string): boolean {
   const profiles = getProfiles().filter((p) => p.id !== id)
   writeProfiles(profiles)
@@ -934,7 +987,56 @@ export function registerWithPhone(input: {
   return { ok: true, user, profileCount: getProfilesByPhone(key).length }
 }
 
+/** Sign up — checks cloud so duplicate phones work across devices. */
+export async function registerWithPhoneAsync(input: {
+  name: string
+  phone: string
+  gender: Gender
+  role: UserRole
+}): Promise<LoginResult> {
+  const key = normalizePhone(input.phone)
+  if (accountExistsForPhone(key)) {
+    return {
+      ok: false,
+      message: 'An account already exists for this number. Please log in.',
+    }
+  }
+  const { fetchCloudUserData } = await import('./cloud-sync')
+  const cloud = await fetchCloudUserData(input.phone)
+  if (cloud?.account) {
+    return {
+      ok: false,
+      message: 'An account already exists for this number. Please log in.',
+    }
+  }
+  return registerWithPhone(input)
+}
+
 /** Login with mobile; optional role picks the workspace (seeker / giver). */
+export async function loginWithPhoneAsync(
+  phone: string,
+  preferredRole?: UserRole,
+): Promise<LoginResult> {
+  const key = normalizePhone(phone)
+  if (key.length !== 10) {
+    return { ok: false, message: 'Enter a valid 10-digit mobile number.' }
+  }
+
+  if (!hasLocalUserData(phone)) {
+    const { fetchCloudUserData } = await import('./cloud-sync')
+    const cloud = await fetchCloudUserData(phone)
+    if (
+      cloud &&
+      (cloud.account || cloud.profiles.length || cloud.requests.length)
+    ) {
+      hydrateCloudUserData(cloud)
+    }
+  }
+
+  return loginWithPhone(phone, preferredRole)
+}
+
+/** @deprecated Use loginWithPhoneAsync for cross-device login */
 export function loginWithPhone(
   phone: string,
   preferredRole?: UserRole,

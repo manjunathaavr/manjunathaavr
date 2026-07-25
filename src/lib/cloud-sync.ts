@@ -25,6 +25,27 @@ export type CloudAdminData = {
   requests: JobRequest[]
 }
 
+export type CloudUserData = {
+  configured: boolean
+  account: StoredAccount | null
+  profiles: SkillProfile[]
+  requests: JobRequest[]
+}
+
+export async function fetchCloudUserData(
+  phone: string,
+): Promise<CloudUserData | null> {
+  const key = phone.replace(/\D/g, '').slice(-10)
+  if (key.length !== 10) return null
+  try {
+    const res = await fetch(`/api/user/${key}`, { cache: 'no-store' })
+    if (!res.ok) return null
+    return (await res.json()) as CloudUserData
+  } catch {
+    return null
+  }
+}
+
 export async function fetchCloudAdminData(
   adminPhone: string,
 ): Promise<CloudAdminData | null> {
