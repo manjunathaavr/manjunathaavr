@@ -2770,13 +2770,26 @@ p {
 }
 
 .admin-data-head--seekers,
-.admin-data-row--seekers {
-  grid-template-columns: minmax(10rem, 1.4fr) 7rem 1.6fr 4.5rem 6.5rem 1.5rem;
-}
-
+.admin-data-row--seekers,
 .admin-data-head--givers,
 .admin-data-row--givers {
-  grid-template-columns: minmax(10rem, 1.4fr) 7rem 1.6fr 4.5rem 6.5rem 1.5rem;
+  grid-template-columns: minmax(10rem, 1.35fr) 7.25rem 1.55fr 4.75rem 7rem 1.25rem;
+}
+
+.admin-data-head--seekers span:nth-child(4),
+.admin-data-head--givers span:nth-child(4) {
+  text-align: center;
+}
+
+.admin-data-head--seekers span:nth-child(5),
+.admin-data-head--givers span:nth-child(5) {
+  text-align: left;
+}
+
+.admin-data-head--seekers span:last-child,
+.admin-data-head--givers span:last-child,
+.admin-data-head--requests span:last-child {
+  text-align: right;
 }
 
 .admin-data-head--requests,
@@ -2862,6 +2875,22 @@ p {
   font-weight: 600;
   font-size: 0.82rem;
   color: #4b5563;
+  white-space: nowrap;
+}
+
+.admin-data-row__skills {
+  min-width: 0;
+}
+
+.admin-data-row__skills .admin-chips {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.admin-data-row__skills .admin-chip {
+  max-width: 8.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .admin-data-row__location,
@@ -2869,6 +2898,25 @@ p {
 .admin-data-row__status {
   font-size: 0.82rem;
   color: #6b7280;
+}
+
+.admin-data-row__count {
+  justify-self: center;
+  text-align: center;
+}
+
+.admin-loc-pill {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.05);
+  color: #4b5563;
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
 .admin-num {
@@ -3109,9 +3157,9 @@ p {
 }
 
 .admin-tab--on {
-  background: #eef4fb;
-  border-color: #b8d4ef;
-  color: #2b6cb0;
+  background: rgba(13, 92, 74, 0.1);
+  border-color: rgba(13, 92, 74, 0.28);
+  color: #0d5c4a;
 }
 
 .admin-stats {
@@ -4265,13 +4313,19 @@ legend {
     grid-area: skills;
   }
 
+  .admin-data-row__skills .admin-chips {
+    flex-wrap: wrap;
+  }
+
   .admin-data-row__count,
   .admin-data-row__location,
   .admin-data-row__status {
     grid-area: meta;
     display: inline-flex;
-    gap: 0.5rem;
+    align-items: center;
+    gap: 0.35rem;
     flex-wrap: wrap;
+    justify-self: start;
   }
 
   .admin-data-row__chevron {
@@ -4285,8 +4339,14 @@ legend {
     color: var(--ink-soft);
   }
 
-  .admin-data-row__count::before {
+  .admin-data-row--seekers .admin-data-row__count::before {
     content: 'Listings: ';
+    font-weight: 700;
+    color: var(--ink-soft);
+  }
+
+  .admin-data-row--givers .admin-data-row__count::before {
+    content: 'Requests: ';
     font-weight: 700;
     color: var(--ink-soft);
   }

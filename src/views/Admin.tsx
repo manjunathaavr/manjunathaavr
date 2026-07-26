@@ -656,7 +656,9 @@ function SeekerDetailCard({
         <span className="admin-data-row__count">
           <span className="admin-num">{seeker.listingCount}</span>
         </span>
-        <span className="admin-data-row__location">{location}</span>
+        <span className="admin-data-row__location">
+          <span className="admin-loc-pill">{location}</span>
+        </span>
         <span className="admin-data-row__chevron" aria-hidden="true">
           {open ? '▾' : '▸'}
         </span>
