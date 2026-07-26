@@ -3411,21 +3411,34 @@ legend {
   min-height: 42px;
   padding: 0.55rem 0.25rem;
   border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.14);
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
   background: var(--white);
   color: var(--ink);
   font: inherit;
   font-weight: 600;
   font-size: 0.82rem;
   cursor: pointer;
+  outline: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.hire-option--on .hire-option__tab {
-  border-color: rgba(13, 92, 74, 0.38);
-  background: rgba(13, 92, 74, 0.1);
-  color: #0d5c4a;
+.offer-form .hire-option--on .hire-option__tab,
+.offer-form .hire-option__tab[aria-pressed='true'] {
+  border-color: #b8d4ef;
+  background: #eef4fb;
+  color: #2b6cb0;
+  box-shadow: none;
+}
+
+.offer-form .hire-option--on .hire-option__tab:focus,
+.offer-form .hire-option--on .hire-option__tab:focus-visible,
+.offer-form .hire-option__tab[aria-pressed='true']:focus,
+.offer-form .hire-option__tab[aria-pressed='true']:focus-visible {
+  border-color: #4a9fe8;
+  box-shadow: 0 0 0 3px rgba(74, 159, 232, 0.15);
 }
 
 .hire-option__amount {
@@ -3451,8 +3464,8 @@ legend {
 }
 
 .hire-option--on .hire-option__amount {
-  border-color: rgba(13, 92, 74, 0.32);
-  background: rgba(13, 92, 74, 0.04);
+  border-color: rgba(0, 0, 0, 0.16);
+  background: var(--white);
 }
 
 .chip {
