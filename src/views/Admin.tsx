@@ -11,7 +11,6 @@ import {
   buildAdminJobGivers,
   buildAdminJobSeekers,
   buildAdminStats,
-  clearAllMarketplaceData,
   deleteJobGiverByPhone,
   deleteJobSeekerByPhone,
   deleteProfile,
@@ -23,7 +22,6 @@ import {
   getRequests,
   isSuperAdminSession,
   normalizePhone,
-  restoreSampleProfiles,
   type AdminJobGiver,
   type AdminJobSeeker,
   type JobRequest,
@@ -391,41 +389,6 @@ export function Admin() {
               Open <strong>Job seekers</strong> or <strong>Job givers</strong> to
               see every user’s full details. Tap a row to expand.
             </p>
-            <div className="admin-danger">
-              <h2>Delete data</h2>
-              <p className="section__lead">
-                Permanently remove marketplace data stored in this browser.
-              </p>
-              <div className="account-head__actions">
-                <button
-                  type="button"
-                  className="btn btn--danger"
-                  onClick={() => {
-                    if (
-                      !confirmDelete(
-                        'Delete ALL profiles and requests in this browser? This cannot be undone.',
-                      )
-                    ) {
-                      return
-                    }
-                    clearAllMarketplaceData()
-                    refresh()
-                  }}
-                >
-                  Clear all data
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--ghost"
-                  onClick={() => {
-                    restoreSampleProfiles()
-                    refresh()
-                  }}
-                >
-                  Restore sample listings
-                </button>
-              </div>
-            </div>
           </div>
         )}
 
