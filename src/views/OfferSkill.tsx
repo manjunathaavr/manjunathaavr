@@ -209,7 +209,7 @@ export function OfferSkill() {
         await fillCityFromPin(place.pinCode)
       } else if (place.address) {
         setLocationHint(
-          'Address saved from GPS. Please confirm city and enter the 6-digit pin code.',
+          'Address of the service saved from GPS. Please confirm city and enter the 6-digit pin code.',
         )
       } else {
         setLocationHint('Could not read street address. Please type it manually.')
@@ -251,7 +251,7 @@ export function OfferSkill() {
       return
     }
     if (!trimmedAddress) {
-      alert('Please enter your address (street or landmark).')
+      alert('Please enter the address of the service (street or landmark).')
       return
     }
     if (!trimmedCity) {
@@ -470,7 +470,7 @@ export function OfferSkill() {
           <div className="field-block">
             <div className="field-block__head">
               <span>
-                Address <span className="req">*</span>
+                Address of the service <span className="req">*</span>
               </span>
               <button
                 type="button"
@@ -485,7 +485,7 @@ export function OfferSkill() {
               name="address"
               required
               autoComplete="street-address"
-              placeholder="Street, landmark, locality"
+              placeholder="Street, landmark, locality where you offer this service"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
             />
