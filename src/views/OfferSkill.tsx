@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { FormSelect } from '../components/FormSelect'
 import { Header } from '../components/Header'
 import { SkillGlyph } from '../components/SkillGlyph'
 import { SkillGrid } from '../components/SkillGrid'
@@ -418,38 +419,24 @@ export function OfferSkill() {
 
           <label htmlFor="offer-education">
             Education <span className="req">*</span>
-            <select
+            <FormSelect
               id="offer-education"
-              name="education"
-              required
               value={education}
-              onChange={(e) => setEducation(e.target.value)}
-            >
-              <option value="">Select education</option>
-              {eduOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
+              onChange={setEducation}
+              options={eduOptions}
+              placeholder="Select education"
+            />
           </label>
 
           <label htmlFor="offer-experience">
             Experience in this skill <span className="req">*</span>
-            <select
+            <FormSelect
               id="offer-experience"
-              name="experience"
-              required
               value={experience}
-              onChange={(e) => setExperience(e.target.value)}
-            >
-              <option value="">Select experience</option>
-              {experienceOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
+              onChange={setExperience}
+              options={experienceOptions}
+              placeholder="Select experience"
+            />
           </label>
 
           <label>
