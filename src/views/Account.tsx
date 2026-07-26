@@ -223,8 +223,8 @@ export function Account() {
                     className="auth-pick__avatar"
                     src="/images/auth-skill-avatar.png"
                     alt=""
-                    width={64}
-                    height={64}
+                    width={120}
+                    height={120}
                   />
                   <strong className="auth-pick__name">I have a skill</strong>
                   <span className="auth-pick__desc">
@@ -249,8 +249,8 @@ export function Account() {
                     className="auth-pick__avatar"
                     src="/images/auth-help-avatar.png"
                     alt=""
-                    width={64}
-                    height={64}
+                    width={120}
+                    height={120}
                   />
                   <strong className="auth-pick__name">I need help</strong>
                   <span className="auth-pick__desc">

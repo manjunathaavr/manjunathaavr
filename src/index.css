@@ -1190,14 +1190,15 @@ p {
 
 .auth-pick__avatar {
   display: block;
-  width: 64px;
-  height: 64px;
+  width: clamp(104px, 28vw, 120px);
+  height: clamp(104px, 28vw, 120px);
   border-radius: 999px;
-  object-fit: cover;
-  object-position: center top;
-  background: #ffffff;
-  border: 2px solid rgba(255, 255, 255, 0.95);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  object-fit: contain;
+  object-position: center;
+  background: transparent;
+  border: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
 }
 
 .auth-welcome__title {
@@ -1312,8 +1313,8 @@ p {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.65rem 0.45rem 0.55rem;
+  gap: 0.4rem;
+  padding: 0.85rem 0.5rem 0.6rem;
   border-radius: 14px;
   border: 1.5px solid transparent;
   background: #ffffff;
@@ -1714,6 +1715,11 @@ p {
 
   .auth-pick {
     grid-template-columns: 1fr;
+  }
+
+  .auth-pick__avatar {
+    width: clamp(120px, 38vw, 140px);
+    height: clamp(120px, 38vw, 140px);
   }
 
   .auth-help {
