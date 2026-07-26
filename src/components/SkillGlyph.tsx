@@ -16,6 +16,23 @@ export const SkillGlyph = memo(function SkillGlyph({ skillId, size = 56 }: Props
   }
 
   switch (skillId) {
+    case 'mr-servant':
+      return (
+        <svg {...common}>
+          <ellipse cx="32" cy="50" rx="18" ry="4" fill="#E8C547" opacity="0.55" />
+          <circle cx="32" cy="17" r="7" fill="#fff" />
+          <path d="M20 48c2-14 6-20 12-20s10 6 12 20" fill="#fff" />
+          <path
+            d="M26 34h12M26 38l6 6 6-6"
+            stroke="#E8C547"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <rect x="14" y="38" width="9" height="11" rx="2" fill="#E8C547" />
+          <path d="M18.5 38v-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      )
     case 'priest':
       return (
         <svg {...common}>

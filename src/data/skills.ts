@@ -6,8 +6,16 @@ export type Skill = {
   color: string
 }
 
-/** Order matches SwayamKrushi.txt */
+/** Order matches SwayamKrushi.txt — Mr. Servant is the flagship skill (first). */
 export const skills: Skill[] = [
+  {
+    id: 'mr-servant',
+    name: 'Mr. Servant',
+    shortLabel: 'All-round help',
+    description:
+      'Trusted helper for home, office, errands, events, and daily tasks — every qualification welcome',
+    color: '#0D5C4A',
+  },
   { id: 'priest', name: 'Priest', shortLabel: 'Puja', description: 'Puja, rituals, ceremonies at home', color: '#6B3A1E' },
   { id: 'nurse', name: 'Nurse', shortLabel: 'Health care', description: 'Home nursing, patient care, injections, vitals', color: '#1B6B5A' },
   { id: 'teacher', name: 'Home Tutor / Teacher', shortLabel: 'Tuition', description: 'Home tuition, subject coaching, exam prep', color: '#1E5A3A' },

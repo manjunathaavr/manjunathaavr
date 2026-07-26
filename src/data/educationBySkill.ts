@@ -10,6 +10,32 @@ export const commonEducationOptions = [
 
 /** Education choices tailored to each skill (India-relevant) */
 const educationBySkill: Record<string, readonly string[]> = {
+  'mr-servant': [
+    'Uneducated / No formal schooling',
+    '5th pass',
+    '8th pass',
+    '10th / SSLC',
+    'PUC / 12th',
+    'ITI / Vocational trade certificate',
+    'Diploma (any field)',
+    'Degree (BA / BSc / BCom / BE / BBA / etc.)',
+    'Post Graduation (MA / MSc / MBA / MCA / etc.)',
+    'Professional (CA / CS / CMA / LLB / MBBS / BDS / etc.)',
+    'PhD / Doctorate',
+    'Government job experience',
+    'Private sector / corporate experience',
+    'Self-employed / Business owner',
+    'Ex-defence / Ex-police / Ex-government service',
+    'Household / domestic work experience',
+    'Driver with valid licence',
+    'Skilled trade (electrician / plumber / carpenter / etc.)',
+    'Healthcare / nursing / caregiving certificate',
+    'Teaching / tutoring experience',
+    'Computer / digital / office skills',
+    'Multilingual (Kannada / Hindi / English / Telugu / Tamil / etc.)',
+    'Fresh — willing to learn on the job',
+    'Other qualification',
+  ],
   nurse: [
     'ANM',
     'GNM',
