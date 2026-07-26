@@ -3,8 +3,6 @@
 import Link from 'next/link'
 import { memo, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { skills, type Skill } from '../data/skills'
-
-const FEATURED_SKILL_ID = 'mr-servant'
 import { useSession } from '../hooks/useSession'
 import { getMySkillIdsForPhone, subscribeSession } from '../lib/storage'
 import { SkillGlyph } from './SkillGlyph'
@@ -17,36 +15,29 @@ type TileProps = {
   skill: Skill
   mode: 'offer' | 'find'
   owned: boolean
-  featured?: boolean
 }
 
-const SkillTile = memo(function SkillTile({ skill, mode, owned, featured }: TileProps) {
+const SkillTile = memo(function SkillTile({ skill, mode, owned }: TileProps) {
   const style = {
     '--tile': skill.color,
   } as CSSProperties
 
   const icon = (
     <span className="skill-tile__icon" style={{ background: skill.color }}>
-      <SkillGlyph skillId={skill.id} size={featured ? 34 : 26} />
+      <SkillGlyph skillId={skill.id} size={26} />
     </span>
   )
 
   const text = (
     <span className="skill-tile__text">
-      {featured && <span className="skill-tile__badge">Featured</span>}
       <strong>{skill.name}</strong>
       <small>{owned ? 'Already listed' : skill.shortLabel}</small>
-      {featured && !owned && (
-        <span className="skill-tile__tagline">{skill.description}</span>
-      )}
     </span>
   )
 
-  const className = `skill-tile${featured ? ' skill-tile--featured' : ''}${owned ? ' skill-tile--owned' : ''}`
-
   if (owned) {
     return (
-      <div className={className} role="listitem" style={style}>
+      <div className="skill-tile skill-tile--owned" role="listitem" style={style}>
         {icon}
         {text}
       </div>
@@ -56,7 +47,7 @@ const SkillTile = memo(function SkillTile({ skill, mode, owned, featured }: Tile
   return (
     <Link
       href={mode === 'offer' ? `/offer/${skill.id}` : `/find/${skill.id}`}
-      className={className}
+      className="skill-tile"
       role="listitem"
       style={style}
       prefetch={false}
@@ -99,9 +90,6 @@ export function SkillGrid({ mode }: Props) {
         s.description.toLowerCase().includes(q),
     )
   }, [query])
-
-  const featuredSkill = filtered.find((s) => s.id === FEATURED_SKILL_ID)
-  const gridSkills = filtered.filter((s) => s.id !== FEATURED_SKILL_ID)
 
   return (
     <div className="skill-picker">
@@ -150,15 +138,7 @@ export function SkillGrid({ mode }: Props) {
         </p>
       ) : (
         <div className="skill-grid" role="list">
-          {featuredSkill && (
-            <SkillTile
-              skill={featuredSkill}
-              mode={mode}
-              owned={ownedSkillIds.has(featuredSkill.id)}
-              featured
-            />
-          )}
-          {gridSkills.map((skill) => (
+          {filtered.map((skill) => (
             <SkillTile
               key={skill.id}
               skill={skill}
