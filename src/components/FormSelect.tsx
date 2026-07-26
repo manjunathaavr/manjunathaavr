@@ -8,7 +8,6 @@ type Props = {
   onChange: (value: string) => void
   options: readonly string[]
   placeholder?: string
-  className?: string
 }
 
 export function FormSelect({
@@ -17,26 +16,33 @@ export function FormSelect({
   onChange,
   options,
   placeholder = 'Select…',
-  className,
 }: Props) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const listId = useId()
 
   useEffect(() => {
+    if (!open) return
     const onDoc = (event: MouseEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) {
         setOpen(false)
       }
     }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
     document.addEventListener('mousedown', onDoc)
-    return () => document.removeEventListener('mousedown', onDoc)
-  }, [])
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDoc)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
 
   return (
     <div
       ref={rootRef}
-      className={`form-select${open ? ' form-select--open' : ''}${className ? ` ${className}` : ''}`}
+      className={`form-select${open ? ' form-select--open' : ''}`}
     >
       <button
         type="button"
@@ -56,30 +62,35 @@ export function FormSelect({
       </button>
 
       {open && (
-        <ul id={listId} className="form-select__menu" role="listbox">
-          <li
-            role="option"
-            aria-selected={!value}
-            className={`form-select__option form-select__option--placeholder${!value ? ' form-select__option--on' : ''}`}
-            onClick={() => {
-              onChange('')
-              setOpen(false)
-            }}
-          >
-            {placeholder}
-          </li>
-          {options.map((option) => (
-            <li
-              key={option}
+        <ul id={listId} className="form-select__list" role="listbox">
+          <li>
+            <button
+              type="button"
               role="option"
-              aria-selected={value === option}
-              className={`form-select__option${value === option ? ' form-select__option--on' : ''}`}
+              aria-selected={!value}
+              className={`form-select__option${!value ? ' form-select__option--on' : ''}`}
               onClick={() => {
-                onChange(option)
+                onChange('')
                 setOpen(false)
               }}
             >
-              {option}
+              {placeholder}
+            </button>
+          </li>
+          {options.map((option) => (
+            <li key={option}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={value === option}
+                className={`form-select__option${value === option ? ' form-select__option--on' : ''}`}
+                onClick={() => {
+                  onChange(option)
+                  setOpen(false)
+                }}
+              >
+                {option}
+              </button>
             </li>
           ))}
         </ul>

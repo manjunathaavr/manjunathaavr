@@ -2232,8 +2232,23 @@ p {
   cursor: pointer;
 }
 
-.offer-form label > select,
-.offer-form label > .form-select {
+.offer-form input:focus,
+.offer-form select:focus,
+.offer-form textarea:focus {
+  background-color: var(--white);
+  border-color: var(--forest-mid);
+  box-shadow: 0 0 0 3px rgba(0, 89, 179, 0.1);
+}
+
+.offer-form select:focus {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23000000' d='M1.4 0.6 6 5.2 10.6.6 12 2 6 8 0 2z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  background-size: 12px 8px;
+}
+
+.offer-form label > .form-select,
+.profile-form label > .form-select {
   display: block;
   width: 100%;
   margin-top: 0.35rem;
@@ -2261,6 +2276,7 @@ p {
   cursor: pointer;
   text-align: left;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .form-select__trigger:focus-visible,
@@ -2277,12 +2293,12 @@ p {
 
 .form-select__chevron {
   flex-shrink: 0;
-  color: var(--ink-soft);
-  font-size: 0.8rem;
+  color: #4a9fe8;
+  font-size: 0.9rem;
   line-height: 1;
 }
 
-.form-select__menu {
+.form-select__list {
   position: absolute;
   z-index: 40;
   left: 0;
@@ -2291,51 +2307,34 @@ p {
   margin: 0;
   padding: 0.35rem;
   list-style: none;
-  max-height: 16rem;
+  max-height: min(16rem, 52vh);
   overflow: auto;
-  background: var(--white);
-  border: 1.5px solid #b8d4ef;
   border-radius: 12px;
-  box-shadow: 0 12px 28px rgba(0, 89, 179, 0.12);
+  border: 1.5px solid #b8d4ef;
+  background: var(--white);
+  box-shadow: 0 12px 28px rgba(74, 159, 232, 0.16);
 }
 
 .form-select__option {
+  display: block;
+  width: 100%;
   padding: 0.65rem 0.75rem;
+  border: 0;
   border-radius: 8px;
+  background: transparent;
+  font: inherit;
   font-size: 0.95rem;
-  line-height: 1.35;
+  font-weight: 500;
+  text-align: left;
   cursor: pointer;
   color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
 }
 
-.form-select__option:hover {
-  background: rgba(74, 159, 232, 0.1);
-  color: #2b6cb0;
-}
-
+.form-select__option:hover,
 .form-select__option--on {
-  background: rgba(74, 159, 232, 0.16);
+  background: #eef4fb;
   color: #2b6cb0;
-  font-weight: 600;
-}
-
-.form-select__option--placeholder {
-  color: var(--ink-soft);
-}
-
-.offer-form input:focus,
-.offer-form select:focus,
-.offer-form textarea:focus {
-  background-color: var(--white);
-  border-color: var(--forest-mid);
-  box-shadow: 0 0 0 3px rgba(0, 89, 179, 0.1);
-}
-
-.offer-form select:focus {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23000000' d='M1.4 0.6 6 5.2 10.6.6 12 2 6 8 0 2z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.9rem center;
-  background-size: 12px 8px;
 }
 
 .offer-form .input--locked {
@@ -3633,8 +3632,8 @@ legend {
   box-sizing: border-box;
   height: 44px;
   min-height: 44px;
-  border-radius: 12px;
-  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.16);
 }
 
 .search-bar__input {
@@ -3707,22 +3706,14 @@ legend {
   font-weight: 500;
   font-size: 0.88rem;
   padding: 0 1.9rem 0 0.7rem;
-  background-color: #fafafa;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%232b6cb0' d='M1.4 0.6 6 5.2 10.6.6 12 2 6 8 0 2z'/%3E%3C/svg%3E");
+  background-color: var(--white);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23000000' d='M1.4 0.6 6 5.2 10.6.6 12 2 6 8 0 2z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.65rem center;
   color: var(--ink);
   cursor: pointer;
   -webkit-appearance: none;
   appearance: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-}
-
-.search-bar__field--sort select:focus {
-  outline: none;
-  background-color: var(--white);
-  border-color: var(--forest-mid);
-  box-shadow: 0 0 0 3px rgba(0, 89, 179, 0.1);
 }
 
 .hint {
